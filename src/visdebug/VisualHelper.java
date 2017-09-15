@@ -1,3 +1,5 @@
+package visdebug;
+
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
@@ -37,7 +39,7 @@ public class VisualHelper extends JPanel implements KeyListener {
 	 * Constructor
 	 */
 	public VisualHelper() {
-		frame = new JFrame("COMP3702 A1");
+		frame = new JFrame("COMP3702 A2");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(panelWidth, panelHeight);
 		frame.add(this);

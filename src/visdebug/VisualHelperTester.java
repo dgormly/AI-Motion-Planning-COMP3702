@@ -1,33 +1,39 @@
+package visdebug;
+
+import agent.SearchAgent;
+import problem.Obstacle;
+import problem.ProblemSpec;
+
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class VisualHelperTester {
 
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
-		
-		// Create list of points
-		ArrayList<Point2D> points = new ArrayList<Point2D>();
-		points.add(new Point2D.Double(0.3, 0.3));
-		points.add(new Point2D.Double(0.5, 0.5));
-		ArrayList<Point2D> points2 = new ArrayList<Point2D>();
-		points2.add(new Point2D.Double(0.8, 0.5));
-		points2.add(new Point2D.Double(0.9, 0.6));
-		points2.add(new Point2D.Double(0.9, 0.5));
-		points2.add(new Point2D.Double(0.8, 0.4));
-		
-		// Create list of rectangles
-		ArrayList<Rectangle2D> rects = new ArrayList<Rectangle2D>();
-		rects.add(new Rectangle2D.Double(0, 0, 0.2, 0.3));
-		
+	public static void main(String[] args) throws IOException {
+		ProblemSpec problemSpec = new ProblemSpec();
+		problemSpec.loadProblem("testcases/7ASV.txt");
+
+		SearchAgent agent = new SearchAgent(problemSpec);
+
+		// Create points
+		List<Point2D> pointList = agent.distributePoints(1000, 0, 0, 1, 1);
+		// Create obstacles
+		List<Obstacle> obstacleList = problemSpec.getObstacles();
+		List<Rectangle2D> rectangle2DList = new ArrayList<>();
+		for (Obstacle o : obstacleList) {
+			rectangle2DList.add(o.getRect());
+		}
+
 		// Test
 		VisualHelper visualHelper = new VisualHelper();
-		visualHelper.addPoints(points);
-		visualHelper.addPoints(points2);
-		visualHelper.addRectangles(rects);
+		visualHelper.addPoints(pointList);
+		visualHelper.addRectangles(rectangle2DList);
 		visualHelper.repaint();
 		
 		// Wait for user key press
@@ -35,8 +41,8 @@ public class VisualHelperTester {
 		
 		// Clear points, then draw linkedPoints
 		visualHelper.clearPoints();
-		visualHelper.addLinkedPoints(points);
-		visualHelper.addLinkedPoints(points2);
+	//	visualHelper.addLinkedPoints(points);
+	//	visualHelper.addLinkedPoints(points2);
 		visualHelper.repaint();
 	}
 
