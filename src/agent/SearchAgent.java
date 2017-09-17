@@ -148,19 +148,21 @@ public class SearchAgent {
 
         // Start Search
         int pos = vertices.indexOf(closestStartPoint);
-        Node parent = new Node(null, closestStartPoint);
+        Node parent = new Node(null, closestStartPoint, closestStartPoint.distance(closestGoalPoint));
         Set<Point2D> historySet = new HashSet<>();
-        LinkedList<Node> queue = new LinkedList<>();
-        queue.add(parent);
+        PriorityQueue<Node> container = new PriorityQueue<>();
+        container.add(parent);
         while (true) {
-            Node current = queue.poll();
+            Node current = container.poll();
+            if (historySet.contains(current.point)) {
+                continue;
+            }
             historySet.add(current.point);
-            List<Point2D> children = getPointsInRange(0.1, current.point, vertices);
-            children.remove(current.point);
+            List<Point2D> children = getPointsInRange(0.05, current.point, vertices);
             for (Point2D p : children) {
                 if (p.equals(closestGoalPoint)) {
                     List<Point2D> path = new ArrayList<>();
-                    Node finalNode = new Node(current, p);
+                    Node finalNode = new Node(current, p, p.distance(current.point));
                     path.add(finalNode.point);
                     while(current.parent != null) {
                         path.add(current.point);
@@ -169,8 +171,9 @@ public class SearchAgent {
                     path.add(current.point);
                     return path;
                 }
-                Node n = new Node(current, p);
-                queue.push(n);
+                double cost = p.distance(current.point) + p.distance(closestGoalPoint);
+                Node n = new Node(current, p, cost);
+                container.add(n);
             }
         }
     }

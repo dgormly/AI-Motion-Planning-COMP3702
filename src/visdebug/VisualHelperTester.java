@@ -38,7 +38,7 @@ public class VisualHelperTester {
 		// Test
 		do {
 			visualHelper.clearAll();
-			List<Point2D> vertices = agent.samplePoints(500, 0, 0, 1, 1);
+			List<Point2D> vertices = agent.samplePoints(2000, 0, 0, 1, 1);
 			visualHelper.addRectangles(rectangle2DList);
 			visualHelper.addPoints(vertices);
 			visualHelper.repaint();
