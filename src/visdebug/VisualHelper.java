@@ -210,6 +210,7 @@ public class VisualHelper extends JPanel implements KeyListener {
 			} else if (color == 4) {
 				g.setColor(Color.cyan);
 			}
+			g.setColor(Color.black);
 			
 			for (int j = 0; j < linkedPoints.get(i).size() - 1; j++) {
 				Point2D p1 = linkedPoints.get(i).get(j);
