@@ -1,15 +1,14 @@
 package visdebug;
 
 import agent.SearchAgent;
+import problem.ASVConfig;
 import problem.Obstacle;
 import problem.ProblemSpec;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 public class VisualHelperTester {
@@ -36,20 +35,28 @@ public class VisualHelperTester {
 
 		VisualHelper visualHelper = new VisualHelper();
 		// Test
-		do {
-			visualHelper.clearAll();
-			List<Point2D> vertices = agent.samplePoints(2000, 0, 0, 1, 1);
-			visualHelper.addRectangles(rectangle2DList);
-			visualHelper.addPoints(vertices);
-			visualHelper.repaint();
-			visualHelper.waitKey();
-			//agent.createGraph(vertices).forEach((v) -> visualHelper.addLinkedPoints(v));
-			Point2D p1 = new Point2D.Double(0.2, 0.1);
-			Point2D p2 = new Point2D.Double(0.8, 0.9);
-			visualHelper.addLinkedPoints(agent.findPath(vertices, p1, p2));
-			visualHelper.repaint();
-			visualHelper.waitKey();
-		} while (true);
+		ASVConfig initialConfig = new ASVConfig(3, "0.150 0.225 0.150 0.275 0.200 0.275 \n" +
+				"0.850 0.225 0.850 0.275 0.900 0.275");
+		Point2D p1 = new Point2D.Double(0.25, 0.5);
+		initialConfig = agent.moveASV(initialConfig, p1);
+		visualHelper.addLinkedPoints(initialConfig.getASVPositions());
+
+		Point2D p2 = new Point2D.Double(0.5, 0.5);
+		Point2D p3 = new Point2D.Double(0.75, 0.5);
+		List<Point2D> pointList = new ArrayList<>();
+		pointList.add(p1);
+		pointList.add(p2);
+		pointList.add(p3);
+		visualHelper.addPoints(pointList);
+
+		visualHelper.repaint();
+		visualHelper.waitKey();
+
+		initialConfig = agent.moveASV(initialConfig, p2);
+		visualHelper.addLinkedPoints(initialConfig.getASVPositions());
+		visualHelper.repaint();
+
+
 	}
 
 }

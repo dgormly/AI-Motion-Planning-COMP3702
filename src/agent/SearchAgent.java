@@ -3,8 +3,8 @@ package agent;
 import problem.ASVConfig;
 import problem.Obstacle;
 import problem.ProblemSpec;
+import tester.Tester;
 
-import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -22,20 +22,11 @@ public class SearchAgent {
 
     public SearchAgent(ProblemSpec problem) {
         problemSpec = problem;
-        obstacleList = problem.getObstacles();
-        obstacleList.forEach((o) -> {
-            Rectangle2D rect = o.getRect();
-        });
+        obstacleList = problemSpec.getObstacles();
         graph = new HashMap<>();
         sampleList = new ArrayList<>();
 
-        //List<Point2D> initState = problemSpec.getInitialState().getASVPositions();
-        //List<Point2D> finalState = problemSpec.getGoalState().getASVPositions();
-        //sampleList.add(initState.get(0));
-        //sampleList.add(finalState.get(0));
 
-        //graph.put(initState.get(0), initState);
-        //graph.put(finalState.get(0), finalState);
     }
 
     public List<Point2D> samplePoints(int sampleSize, double x, double y, double x2, double y2) {
@@ -57,7 +48,7 @@ public class SearchAgent {
         Set<Set<Point2D>> edges = new HashSet<>();
         adjacenyGraph = new int[size][size];
         for (Point2D p : vertices) {
-            List<Point2D> points = getPointsInRange(0.1, p, vertices);
+            List<Point2D> points = getPointsInRange(0.05, p, vertices);
             int pos = vertices.indexOf(p);
             for (Point2D p2 : points) {
                 int pos2 = vertices.indexOf(p2);
@@ -176,5 +167,32 @@ public class SearchAgent {
                 container.add(n);
             }
         }
+    }
+
+    public List<ASVConfig> findInvalidConfigs(ASVConfig config, List<Point2D> path) {
+        Tester tester = new Tester();
+        ASVConfig pathConfig;
+        List<ASVConfig> invalidStates = new ArrayList<>();
+        for (Point2D p : path) {
+            pathConfig = moveASV(config, p);
+             if (tester.hasCollision(pathConfig, obstacleList)) {
+                 invalidStates.add(pathConfig);
+             }
+        }
+        return invalidStates;
+    }
+
+    public ASVConfig moveASV(ASVConfig config, Point2D newPos) {
+        ASVConfig newConfig = new ASVConfig(config);
+        Point2D anchorPoint = config.getPosition(0);
+        // Configure asvs relative to parent.
+        for (int i = 1; i < newConfig.getASVCount(); i++) {
+            Point2D p = newConfig.getPosition(i);
+            double differenceX = p.getX() - anchorPoint.getX();
+            double differenceY = p.getY() - anchorPoint.getY();
+            p.setLocation(newPos.getX() + differenceX, newPos.getY() + differenceY);
+        }
+        newConfig.getPosition(0).setLocation(newPos);
+        return newConfig;
     }
 }
