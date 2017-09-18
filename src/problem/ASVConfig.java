@@ -1,9 +1,6 @@
 package problem;
 
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.awt.geom.Point2D;
 
 /**
@@ -145,6 +142,11 @@ public class ASVConfig {
 	 * @return the positions of all the ASVs, in order.
 	 */
 	public List<Point2D> getASVPositions() {
-		return new ArrayList<Point2D>(asvPositions);
+		List<Point2D> newList = new ArrayList();
+		for (Point2D p : asvPositions) {
+			Point2D tempPoint = (Point2D) p.clone();
+			newList.add(tempPoint);
+		}
+		return newList;
 	}
 }

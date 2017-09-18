@@ -169,14 +169,14 @@ public class SearchAgent {
         }
     }
 
-    public List<ASVConfig> findInvalidConfigs(ASVConfig config, List<Point2D> path) {
+    public List<ASVConfig> findInvalidConfigs(ASVConfig config, List<Point2D> path, List<Obstacle> obstacles) {
         Tester tester = new Tester();
         ASVConfig pathConfig;
         List<ASVConfig> invalidStates = new ArrayList<>();
         for (Point2D p : path) {
             pathConfig = moveASV(config, p);
-             if (tester.hasCollision(pathConfig, obstacleList)) {
-                 invalidStates.add(pathConfig);
+             if (tester.hasCollision(pathConfig, obstacles)) {
+                 invalidStates.add(new ASVConfig(pathConfig));
              }
         }
         return invalidStates;
@@ -194,5 +194,5 @@ public class SearchAgent {
         }
         newConfig.getPosition(0).setLocation(newPos);
         return newConfig;
-    }
+    }   
 }

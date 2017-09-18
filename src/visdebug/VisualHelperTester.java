@@ -27,11 +27,11 @@ public class VisualHelperTester {
 		SearchAgent agent = new SearchAgent(problemSpec);
 
 		// Create obstacles
-		List<Obstacle> obstacleList = problemSpec.getObstacles();
-		List<Rectangle2D> rectangle2DList = new ArrayList<>();
-		for (Obstacle o : obstacleList) {
-			rectangle2DList.add(o.getRect());
-		}
+		List<Obstacle> obstacleList = new ArrayList<>();
+		Obstacle obstacle = new Obstacle(0.45, 0.5, 0.1, 0.1);
+		obstacleList.add(obstacle);
+		List<Rectangle2D> rectList = new ArrayList<>();
+		rectList.add(obstacle.getRect());
 
 		VisualHelper visualHelper = new VisualHelper();
 		// Test
@@ -39,7 +39,7 @@ public class VisualHelperTester {
 				"0.850 0.225 0.850 0.275 0.900 0.275");
 		Point2D p1 = new Point2D.Double(0.25, 0.5);
 		initialConfig = agent.moveASV(initialConfig, p1);
-		visualHelper.addLinkedPoints(initialConfig.getASVPositions());
+		//visualHelper.addLinkedPoints(initialConfig.getASVPositions());
 
 		Point2D p2 = new Point2D.Double(0.5, 0.5);
 		Point2D p3 = new Point2D.Double(0.75, 0.5);
@@ -48,13 +48,16 @@ public class VisualHelperTester {
 		pointList.add(p2);
 		pointList.add(p3);
 		visualHelper.addPoints(pointList);
-
+		visualHelper.addRectangles(rectList);
+		List<ASVConfig> invalidConfigs;
+		invalidConfigs = agent.findInvalidConfigs(initialConfig, pointList, obstacleList);
 		visualHelper.repaint();
 		visualHelper.waitKey();
-
-		initialConfig = agent.moveASV(initialConfig, p2);
-		visualHelper.addLinkedPoints(initialConfig.getASVPositions());
+		visualHelper.addLinkedPoints(invalidConfigs.get(0).getASVPositions());
 		visualHelper.repaint();
+
+
+
 
 
 	}
