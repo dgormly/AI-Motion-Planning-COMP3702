@@ -194,5 +194,30 @@ public class SearchAgent {
         }
         newConfig.getPosition(0).setLocation(newPos);
         return newConfig;
-    }   
+    }
+
+    public Point2D rotatePoint(Point2D anchorPoint, Point2D point, int degree) {
+        double x = point.getX() - anchorPoint.getX();
+        double h = point.distance(anchorPoint);
+        double currentRad = Math.acos(x/h);
+        double currentDeg = Math.toDegrees(currentRad);
+        currentDeg += degree;
+        currentRad = Math.toRadians(currentDeg);
+
+        // New Pos
+        double newX = h * Math.cos(currentRad) + anchorPoint.getX();
+        double newY = h * Math.sin(currentRad) + anchorPoint.getY();
+        return new Point2D.Double(newX, newY);
+    }
+
+    public ASVConfig rotateASV(ASVConfig config, int pointNumber, int degrees) {
+        config = new ASVConfig(config);
+        for (int i = 1; i < config.getASVCount(); i++) {
+            Point2D p = config.getPosition(i);
+            p = rotatePoint(config.getPosition(pointNumber - 1), p, 90);
+            config.getPosition(i).setLocation(p);
+        }
+
+        return config;
+    }
 }
