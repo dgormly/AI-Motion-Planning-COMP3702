@@ -27,6 +27,7 @@ public class SearchAgent {
         sampleList = new ArrayList<>();
 
 
+
     }
 
     public List<Point2D> samplePoints(int sampleSize, double x, double y, double x2, double y2) {
@@ -133,13 +134,13 @@ public class SearchAgent {
         return returnList;
     }
 
-    public List<Point2D> findPath(List<Point2D> vertices, Point2D start, Point2D goal) {
-        Point2D closestStartPoint = getClosestPoint(start, vertices);
-        Point2D closestGoalPoint = getClosestPoint(goal, vertices);
+    public List<Node> findPath(List<Point2D> vertices, ASVConfig start, ASVConfig goal) {
+        Point2D closestStartPoint = getClosestPoint(start.getPosition(0), vertices);
+        Point2D closestGoalPoint = getClosestPoint(goal.getPosition(0), vertices);
 
         // Start Search
         int pos = vertices.indexOf(closestStartPoint);
-        Node parent = new Node(null, closestStartPoint, closestStartPoint.distance(closestGoalPoint));
+        Node parent = new Node(null, closestStartPoint, closestStartPoint.distance(closestGoalPoint), start);
         Set<Point2D> historySet = new HashSet<>();
         PriorityQueue<Node> container = new PriorityQueue<>();
         container.add(parent);
@@ -149,21 +150,34 @@ public class SearchAgent {
                 continue;
             }
             historySet.add(current.point);
-            List<Point2D> children = getPointsInRange(0.05, current.point, vertices);
+            ASVConfig currentConfig = current.config;
+            boolean invalidFlag = false;
+            for (Point2D p : currentConfig.getASVPositions()) {
+                if (checkValidPoint(p)) {
+                    invalidFlag = true;
+                }
+            }
+            if (invalidFlag) {
+                continue;
+            }
+
+            List<Point2D> children = getPointsInRange(0.03, current.point, vertices);
             for (Point2D p : children) {
                 if (p.equals(closestGoalPoint)) {
-                    List<Point2D> path = new ArrayList<>();
-                    Node finalNode = new Node(current, p, p.distance(current.point));
-                    path.add(finalNode.point);
+                    List<Node> path = new ArrayList<>();
+                    Node finalNode = new Node(current, p, p.distance(current.point), goal);
+                    path.add(finalNode);
                     while(current.parent != null) {
-                        path.add(current.point);
+                        path.add(current);
                         current = current.parent;
                     }
-                    path.add(current.point);
+                    path.add(current);
                     return path;
                 }
                 double cost = p.distance(current.point) + p.distance(closestGoalPoint);
-                Node n = new Node(current, p, cost);
+                ASVConfig newConfig = new ASVConfig(currentConfig);
+                newConfig = moveASV(newConfig, p);
+                Node n = new Node(current, p, cost, newConfig);
                 container.add(n);
             }
         }
@@ -219,5 +233,49 @@ public class SearchAgent {
         }
 
         return config;
+    }
+
+    public List<ASVConfig> finalSolution(List<ASVConfig> path) {
+        List<ASVConfig> finalSolution = new ArrayList<>();
+        int asvSize = path.get(0).getASVCount();
+        for (int i = 0; i < path.size() - 1; i++) {
+            ASVConfig c = path.get(i);
+            ASVConfig d = path.get(i + 1);
+            double[] distances = new double[asvSize];
+            int[] numIterations = new int[asvSize];
+            int maxIterations = 0;
+            double[] maxX = new double[asvSize];
+            double[] maxY = new double[asvSize];
+
+            for (int x = 0; x < asvSize; x++) {
+                distances[x] = c.getPosition(x).distance(d.getPosition(x));
+                numIterations[x] = (int) Math.ceil(distances[x] / 0.001);
+                if (numIterations[x] > maxIterations) {
+                    maxIterations = numIterations[x];
+                }
+                maxX[x] = (d.getPosition(x).getX() - c.getPosition(x).getX()) / numIterations[x];
+                maxY[x] = (d.getPosition(x).getY() - c.getPosition(x).getY()) / numIterations[x];
+            }
+
+
+            ASVConfig t = new ASVConfig(c);
+            for (int x = 0; x < maxIterations; x++) {
+                ASVConfig tt = new ASVConfig(c);
+                for (int a = 0; a < asvSize; a++) {
+                    if (x < numIterations[a]) {
+                        double x1 = t.getPosition(a).getX() + maxX[a];
+                        double y1 = t.getPosition(a).getY() + maxY[a];
+                        tt.getPosition(a).setLocation(x1, y1);
+                    } else {
+                        double x1 = t.getPosition(a).getX() + maxX[maxX.length - 1];
+                        double y1 = t.getPosition(a).getY() + maxY[maxY.length - 1];
+                        tt.getPosition(a).setLocation(x1, y1);
+                    }
+                    finalSolution.add(tt);
+                    t = tt;
+                }
+            }
+        }
+        return finalSolution;
     }
 }
