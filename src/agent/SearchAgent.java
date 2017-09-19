@@ -38,7 +38,7 @@ public class SearchAgent {
                 double xPoint = Math.abs(Math.random() * x2 + x);
                 double yPoint = Math.abs(Math.random() * y2 + y);
                 point = new Point2D.Double(xPoint, yPoint);
-            } while (checkValidPoint(point));
+            } while (!checkValidPoint(point));
             sampleList.add(point);
         }
         return sampleList;
@@ -97,10 +97,10 @@ public class SearchAgent {
 
             if ((x > ox && x < ox + width) &&
                     (y > oy && y < oy + height)) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
 
@@ -151,15 +151,15 @@ public class SearchAgent {
             }
             historySet.add(current.point);
             ASVConfig currentConfig = current.config;
-            boolean invalidFlag = false;
-            for (Point2D p : currentConfig.getASVPositions()) {
-                if (checkValidPoint(p)) {
-                    invalidFlag = true;
-                }
-            }
-            if (invalidFlag) {
-                continue;
-            }
+//            boolean invalidFlag = false;
+//            for (Point2D p : currentConfig.getASVPositions()) {
+//                if (checkValidPoint(p)) {
+//                    invalidFlag = true;
+//                }
+//            }
+//            if (invalidFlag) {
+//                continue;
+//            }
 
             List<Point2D> children = getPointsInRange(0.03, current.point, vertices);
             for (Point2D p : children) {
@@ -228,7 +228,7 @@ public class SearchAgent {
         config = new ASVConfig(config);
         for (int i = 1; i < config.getASVCount(); i++) {
             Point2D p = config.getPosition(i);
-            p = rotatePoint(config.getPosition(pointNumber - 1), p, 90);
+            p = rotatePoint(config.getPosition(pointNumber - 1), p, degrees);
             config.getPosition(i).setLocation(p);
         }
 
@@ -277,5 +277,20 @@ public class SearchAgent {
             }
         }
         return finalSolution;
+    }
+
+    public boolean checkValidConfig(ASVConfig config, List<Obstacle> obstacleList) {
+        for (int i = 0; i < config.getASVCount() - 1; i++) {
+            if (!checkValidPoint(config.getPosition(i)) || !checkValidPoint(config.getPosition(i + 1))) {
+                return false;
+            }
+            Line2D line = new Line2D.Double(config.getPosition(i), config.getPosition(i + 1));
+            for (Obstacle o : obstacleList) {
+                if (line.intersects(o.getRect())) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
