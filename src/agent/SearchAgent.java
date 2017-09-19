@@ -183,15 +183,20 @@ public class SearchAgent {
         }
     }
 
-    public List<ASVConfig> findInvalidConfigs(ASVConfig config, List<Point2D> path, List<Obstacle> obstacles) {
+    public List<ASVConfig> findInvalidConfigs(List<ASVConfig> path, List<Obstacle> obstacles) {
         Tester tester = new Tester();
-        ASVConfig pathConfig;
-        List<ASVConfig> invalidStates = new ArrayList<>();
-        for (Point2D p : path) {
-            pathConfig = moveASV(config, p);
-             if (tester.hasCollision(pathConfig, obstacles)) {
-                 invalidStates.add(new ASVConfig(pathConfig));
-             }
+//        ASVConfig pathConfig;
+         List<ASVConfig> invalidStates = new ArrayList<>();
+//        for (Point2D p : path) {
+//            pathConfig = moveASV(config, p);
+//             if (tester.hasCollision(pathConfig, obstacles)) {
+//                 invalidStates.add(pathConfig);
+//             }
+//        }
+        for (ASVConfig c : path) {
+            if (tester.hasCollision(c, obstacles)) {
+                invalidStates.add(c);
+            }
         }
         return invalidStates;
     }
@@ -225,7 +230,6 @@ public class SearchAgent {
     }
 
     public ASVConfig rotateASV(ASVConfig config, int pointNumber, int degrees) {
-        config = new ASVConfig(config);
         for (int i = 1; i < config.getASVCount(); i++) {
             Point2D p = config.getPosition(i);
             p = rotatePoint(config.getPosition(pointNumber - 1), p, degrees);

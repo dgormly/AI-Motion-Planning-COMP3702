@@ -50,7 +50,7 @@ public class VisualHelperTester {
 //		visualHelper.addPoints(path);
 		visualHelper.repaint();
 
-		List<ASVConfig> inValidConfigs = agent.findInvalidConfigs(initialConfig, path, obstacles);
+		List<ASVConfig> inValidConfigs = agent.findInvalidConfigs(asvPath, obstacles);
 
 		inValidConfigs.forEach((e) -> {
 			visualHelper.addLinkedPoints(e.getASVPositions());
@@ -60,9 +60,6 @@ public class VisualHelperTester {
 			visualHelper.addRectangles(Arrays.asList(o.getRect()));
 		});
 
-		visualHelper.repaint();
-		visualHelper.waitKey();
-
 		visualHelper.clearAll();
 		obstacles.forEach(o -> {
 			visualHelper.addRectangles(Arrays.asList(o.getRect()));
@@ -70,8 +67,6 @@ public class VisualHelperTester {
 
 		for (ASVConfig c : inValidConfigs) {
 			int degrees = 0;
-			Point2D checkPoint = c.getPosition(2);
-			Line2D line = new Line2D.Double(c.getPosition(1), checkPoint);
 			while (!agent.checkValidConfig(c, obstacles)) {
 				if (degrees == 360) {
 					System.out.println("Gonna need to do more than rotate bud");
@@ -81,12 +76,11 @@ public class VisualHelperTester {
 				degrees++;
 			}
 			visualHelper.addLinkedPoints(c.getASVPositions());
-			visualHelper.repaint();
-			visualHelper.waitKey();
 		}
 
-		//problemSpec.setPath(finalPath);
-		//problemSpec.saveSolution("testing");
+		List<ASVConfig> finalPath = agent.finalSolution(asvPath);
+		problemSpec.setPath(finalPath);
+		problemSpec.saveSolution("testing");
 
 	}
 
