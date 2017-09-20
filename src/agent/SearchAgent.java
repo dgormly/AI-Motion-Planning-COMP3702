@@ -236,39 +236,32 @@ public class SearchAgent {
         }
     }
 
-    public List<ASVConfig> tracePath(List<ASVConfig> path, double stepSize) {
+    public List<ASVConfig> transform(ASVConfig initialCfg, ASVConfig goalConfig) {
         List<ASVConfig> finalSolution = new ArrayList<>();
-        int asvSize = path.get(0).getASVCount();
-        for (int i = 0; i < path.size() - 1; i++) {
-            ASVConfig c = path.get(i);
-            ASVConfig d = path.get(i + 1);
-            double[] distances = new double[asvSize];
-            int[] pointIterations = new int[asvSize];
-            int maxIterations = 0;
-            double[] xChangeRate = new double[asvSize];
-            double[] yChangeRate = new double[asvSize];
+        finalSolution.add(initialCfg);
+        while (true) {
+            ASVConfig cfg = new ASVConfig(finalSolution.get(finalSolution.size() - 1));
+            for (int i = 0; i < initialCfg.getASVCount(); i++) {
+                double yDist = goalConfig.getPosition(i).getY() - cfg.getPosition(i).getY();
+                double xDist = goalConfig.getPosition(i).getX() - cfg.getPosition(i).getX();
+                double distance = goalConfig.getPosition(i).distance(cfg.getPosition(i));
+                double angle = Math.asin(yDist / distance);
+                double stepSize = distance > 0.001 ? 0.001 : distance;
+                double xRate = stepSize * Math.cos(angle);
+                double yRate = stepSize * Math.sin(angle);
+                double x = cfg.getPosition(i).getX() + xRate;
+                double y = cfg.getPosition(i).getY() + yRate;
 
-            for (int x = 0; x < asvSize; x++) {
-                distances[x] = c.getPosition(x).distance(d.getPosition(x));
-                pointIterations[x] = (int) Math.ceil(distances[x] / stepSize);
-                if (pointIterations[x] > maxIterations) {
-                    maxIterations = pointIterations[x];
+                if (xDist > 0.001 || yDist > 0.001) {
+                    cfg.getPosition(i).setLocation(x, y);
+                } else {
+                    cfg.getPosition(i).setLocation(x, y);
+                    finalSolution.add(cfg);
+                    return finalSolution;
                 }
-                xChangeRate[x] = pointIterations[x] / (d.getPosition(x).getX() - c.getPosition(x).getX());
-                yChangeRate[x] = pointIterations[x] / (d.getPosition(x).getY() - c.getPosition(x).getY());
             }
-
-            for (int x = 0; x < maxIterations; x++) {
-                ASVConfig newASV = new ASVConfig(c);
-                for (int p = 0; p < newASV.getASVCount(); p++) {
-                    Point2D point = new Point2D.Double(x * xChangeRate[p] + newASV.getPosition(p).getX(),
-                            x * yChangeRate[p] + newASV.getPosition(p).getY());
-                    newASV.getPosition(p).setLocation(point);
-                }
-                finalSolution.add(newASV);
-            }
+            finalSolution.add(cfg);
         }
-        return finalSolution;
     }
 
     public void run() {
@@ -290,7 +283,13 @@ public class SearchAgent {
                 }
             }
         }
-        asvPath = tracePath(asvPath, 0.001);
-        problemSpec.setPath(asvPath);
+
+        List<ASVConfig> finalPath = new ArrayList<>();
+        for (int i = 0; i < asvPath.size() - 1; i++) {
+            ASVConfig initial = asvPath.get(i);
+            ASVConfig goal = asvPath.get(i + 1);
+            finalPath.addAll(transform(initial, goal));
+        }
+        problemSpec.setPath(finalPath);
     }
 }

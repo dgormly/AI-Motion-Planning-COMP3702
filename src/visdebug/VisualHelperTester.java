@@ -5,9 +5,12 @@ import agent.SearchAgent;
 import problem.ASVConfig;
 import problem.Obstacle;
 import problem.ProblemSpec;
+import sun.management.resources.agent;
+import tester.Tester;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +21,7 @@ public class VisualHelperTester {
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		ProblemSpec problemSpec = new ProblemSpec();
 		try {
 			problemSpec.loadProblem("testcases/7ASV.txt");
@@ -26,21 +29,17 @@ public class VisualHelperTester {
 			e.printStackTrace();
 		}
 
-		SearchAgent agent = new SearchAgent(problemSpec);
-		List<Obstacle> obstacles = problemSpec.getObstacles();
-
-		ASVConfig initialConfig = problemSpec.getInitialState();
-		ASVConfig finalConfig = problemSpec.getGoalState();
-
 		VisualHelper vh = new VisualHelper();
-		List<ASVConfig> configs = agent.generateConfigs(initialConfig);
-		configs.forEach(c -> {
-			vh.addLinkedPoints(c.getASVPositions());
-		});
-		vh.repaint();
-		vh.waitKey();
-		vh.clearAll();
-		vh.addPoints(agent.getBestConfig(initialConfig, configs).getASVPositions());
+		SearchAgent agent = new SearchAgent(problemSpec);
+		List<Point2D> sample = agent.samplePoints(2000, 0, 0, 1, 1);
+		ASVConfig initialConfig = problemSpec.getInitialState();
+		ASVConfig goalConfig = problemSpec.getGoalState();
+		Tester tester = new Tester();
+
+		List<ASVConfig> asvPath = agent.transform(initialConfig, goalConfig);
+		for (ASVConfig asvConfig : asvPath) {
+			vh.addLinkedPoints(asvConfig.getASVPositions());
+		}
 		vh.repaint();
 		vh.waitKey();
 	}
