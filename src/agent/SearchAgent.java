@@ -173,7 +173,7 @@ public class SearchAgent {
 
     public List<ASVConfig> generateConfigs(ASVConfig originalConfig) {
         List<ASVConfig> validConfigs = new ArrayList<>();
-        while (validConfigs.size() < 50) {
+        while (validConfigs.size() < 100) {
             ASVConfig newConfig = new ASVConfig(originalConfig);
             double range = 180 + (newConfig.getASVCount() - 3) * 180;
             for (int i = 1; i < originalConfig.getASVCount() - 1; i++) {
@@ -193,18 +193,15 @@ public class SearchAgent {
         double dist = 2;
         ASVConfig best = new ASVConfig(list.get(0));
         for (ASVConfig asvConfig : list) {
-            double tempDist = 0;
-            for (int i = 0; i < asvConfig.getASVPositions().size(); i++) {
-                dist += asvConfig.getPosition(i).distance(invalidConfig.getPosition(i));
-            }
-            if (tempDist < dist ) {
-                best = asvConfig;
+            double tempDist = invalidConfig.totalDistance(asvConfig);
+            if (tempDist < dist) {
+                dist = tempDist;
             }
         }
         return best;
     }
 
-    private ASVConfig moveASV(ASVConfig config, Point2D newPos) {
+    public ASVConfig moveASV(ASVConfig config, Point2D newPos) {
         ASVConfig newConfig = new ASVConfig(config);
         Point2D anchorPoint = config.getPosition(0);
         // Configure asvs relative to parent.
@@ -243,7 +240,6 @@ public class SearchAgent {
             ASVConfig cfg = new ASVConfig(finalSolution.get(finalSolution.size() - 1));
             for (int i = 0; i < initialCfg.getASVCount(); i++) {
                 double yDist = goalConfig.getPosition(i).getY() - cfg.getPosition(i).getY();
-                double xDist = goalConfig.getPosition(i).getX() - cfg.getPosition(i).getX();
                 double distance = goalConfig.getPosition(i).distance(cfg.getPosition(i));
                 double angle = Math.asin(yDist / distance);
                 double stepSize = distance > 0.001 ? 0.001 : distance;
@@ -252,11 +248,10 @@ public class SearchAgent {
                 double x = cfg.getPosition(i).getX() + xRate;
                 double y = cfg.getPosition(i).getY() + yRate;
 
-                if (xDist > 0.001 || yDist > 0.001) {
-                    cfg.getPosition(i).setLocation(x, y);
-                } else {
-                    cfg.getPosition(i).setLocation(x, y);
-                    finalSolution.add(cfg);
+                cfg.getPosition(i).setLocation(x, y);
+
+                double totalDistance = cfg.totalDistance(goalConfig);
+                if (totalDistance < 0.001) {
                     return finalSolution;
                 }
             }
@@ -265,7 +260,7 @@ public class SearchAgent {
     }
 
     public void run() {
-        List<Point2D> sample = samplePoints(2000,0, 0, 1, 1);
+        List<Point2D> sample = samplePoints(5000,0, 0, 1, 1);
         ASVConfig initialConfig = problemSpec.getInitialState();
         ASVConfig goalConfig = problemSpec.getGoalState();
 
@@ -279,7 +274,9 @@ public class SearchAgent {
                 List<ASVConfig> possibleConfigs = generateConfigs(asvConfig);
                 ASVConfig best = getBestConfig(asvConfig, possibleConfigs);
                 for (int c = asvPath.indexOf(asvConfig); c < asvPath.size(); c++) {
-                    asvPath.set(c, best);
+                    ASVConfig temp = asvPath.get(c);
+                    best = moveASV(best, temp.getPosition(0));
+                    asvPath.set(c, temp);
                 }
             }
         }

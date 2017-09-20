@@ -24,7 +24,7 @@ public class VisualHelperTester {
 	public static void main(String[] args) throws IOException, InterruptedException {
 		ProblemSpec problemSpec = new ProblemSpec();
 		try {
-			problemSpec.loadProblem("testcases/7ASV.txt");
+			problemSpec.loadProblem("testcases/3ASV.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -35,13 +35,59 @@ public class VisualHelperTester {
 		ASVConfig initialConfig = problemSpec.getInitialState();
 		ASVConfig goalConfig = problemSpec.getGoalState();
 		Tester tester = new Tester();
-
-		List<ASVConfig> asvPath = agent.transform(initialConfig, goalConfig);
-		for (ASVConfig asvConfig : asvPath) {
-			vh.addLinkedPoints(asvConfig.getASVPositions());
+		List<Node> path = agent.findPath(sample, initialConfig, goalConfig);
+		List<ASVConfig> asvPath = new ArrayList<>();
+		List<Obstacle> obstacleList = problemSpec.getObstacles();
+		List<Rectangle2D> rectList = new ArrayList<>();
+		List<Point2D> pointPath = new ArrayList<>();
+		for (Obstacle obstacle : obstacleList) {
+			rectList.add(obstacle.getRect());
 		}
+		for (Node node : path) {
+			asvPath.add(node.config);
+			pointPath.add(node.point);
+		}
+
+		vh.addRectangles(rectList);
 		vh.repaint();
 		vh.waitKey();
+		vh.addLinkedPoints(pointPath);
+		vh.repaint();
+		vh.waitKey();
+
+		for (ASVConfig asvConfig : asvPath) {
+			if (!tester.isValidConfig(asvConfig, obstacleList)) {
+
+				vh.addLinkedPoints(asvConfig.getASVPositions());
+				vh.repaint();
+				vh.waitKey();
+				vh.clearLinkedPoints();
+
+				List<ASVConfig> possibleConfigs = agent.generateConfigs(asvConfig);
+				ASVConfig best = agent.getBestConfig(asvConfig, possibleConfigs);
+
+				vh.addLinkedPoints(best.getASVPositions());
+				for (int c = asvPath.indexOf(asvConfig); c < asvPath.size(); c++) {
+					ASVConfig temp = asvPath.get(c);
+					temp = agent.moveASV(best, temp.getPosition(0));
+					asvPath.set(c, temp);
+				}
+			}
+
+//			}
+		}
+
+//		List<ASVConfig> finalPath = new ArrayList<>();
+//		for (int i = 0; i < asvPath.size() - 1; i++) {
+//			ASVConfig initial = asvPath.get(i);
+//			ASVConfig goal = asvPath.get(i + 1);
+//			finalPath.addAll(agent.transform(initial, goal));
+//		}
+//
+//		for (ASVConfig asvConfig : finalPath) {
+//			vh.addLinkedPoints(asvConfig.getASVPositions());
+//		}
+		vh.repaint();
 	}
 
 }
