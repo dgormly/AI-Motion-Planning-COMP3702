@@ -7,7 +7,6 @@ import tester.Tester;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.List;
 
@@ -17,7 +16,9 @@ public class SearchAgent {
     private List<Obstacle> obstacleList;
     public Map<Point2D, List<Point2D>> graph;
     public List<Point2D> sampleList;
-    public int[][] adjacenyGraph;
+    public int[][] adjacencyGraph;
+    public Tester tester = new Tester();
+    public List<ASVConfig> asvPath = new ArrayList<>();
 
 
     public SearchAgent(ProblemSpec problem) {
@@ -25,9 +26,7 @@ public class SearchAgent {
         obstacleList = problemSpec.getObstacles();
         graph = new HashMap<>();
         sampleList = new ArrayList<>();
-
-
-
+        tester.ps = problemSpec;
     }
 
     public List<Point2D> samplePoints(int sampleSize, double x, double y, double x2, double y2) {
@@ -47,18 +46,18 @@ public class SearchAgent {
     public List<List<Point2D>> createGraph(List<Point2D> vertices) {
         int size = vertices.size();
         Set<Set<Point2D>> edges = new HashSet<>();
-        adjacenyGraph = new int[size][size];
+        adjacencyGraph = new int[size][size];
         for (Point2D p : vertices) {
             List<Point2D> points = getPointsInRange(0.05, p, vertices);
             int pos = vertices.indexOf(p);
             for (Point2D p2 : points) {
                 int pos2 = vertices.indexOf(p2);
-                adjacenyGraph[pos][pos2] = 1;
+                adjacencyGraph[pos][pos2] = 1;
             }
             // Great graph
             for (int i = 0; i < size; i++) {
                 for (int n = 0; n <= i; n++) {
-                    if (adjacenyGraph[i][n] == 1) {
+                    if (adjacencyGraph[i][n] == 1) {
                         Line2D line = new Line2D.Double(vertices.get(i), vertices.get(n));
                         boolean clash = false;
                         for (Obstacle o : obstacleList) {
@@ -139,8 +138,8 @@ public class SearchAgent {
         Point2D closestGoalPoint = getClosestPoint(goal.getPosition(0), vertices);
 
         // Start Search
-        int pos = vertices.indexOf(closestStartPoint);
-        Node parent = new Node(null, closestStartPoint, closestStartPoint.distance(closestGoalPoint), start);
+        Node parent = new Node(null, start.getPosition(0), 0, start);
+        Node child = new Node(parent, closestStartPoint, closestStartPoint.distance(closestGoalPoint), start);
         Set<Point2D> historySet = new HashSet<>();
         PriorityQueue<Node> container = new PriorityQueue<>();
         container.add(parent);
@@ -150,18 +149,7 @@ public class SearchAgent {
                 continue;
             }
             historySet.add(current.point);
-            ASVConfig currentConfig = current.config;
-//            boolean invalidFlag = false;
-//            for (Point2D p : currentConfig.getASVPositions()) {
-//                if (checkValidPoint(p)) {
-//                    invalidFlag = true;
-//                }
-//            }
-//            if (invalidFlag) {
-//                continue;
-//            }
-
-            List<Point2D> children = getPointsInRange(0.03, current.point, vertices);
+            List<Point2D> children = getPointsInRange(0.05, current.point, vertices);
             for (Point2D p : children) {
                 if (p.equals(closestGoalPoint)) {
                     List<Node> path = new ArrayList<>();
@@ -175,7 +163,7 @@ public class SearchAgent {
                     return path;
                 }
                 double cost = p.distance(current.point) + p.distance(closestGoalPoint);
-                ASVConfig newConfig = new ASVConfig(currentConfig);
+                ASVConfig newConfig = new ASVConfig(current.config);
                 newConfig = moveASV(newConfig, p);
                 Node n = new Node(current, p, cost, newConfig);
                 container.add(n);
@@ -183,25 +171,40 @@ public class SearchAgent {
         }
     }
 
-    public List<ASVConfig> findInvalidConfigs(List<ASVConfig> path, List<Obstacle> obstacles) {
-        Tester tester = new Tester();
-//        ASVConfig pathConfig;
-         List<ASVConfig> invalidStates = new ArrayList<>();
-//        for (Point2D p : path) {
-//            pathConfig = moveASV(config, p);
-//             if (tester.hasCollision(pathConfig, obstacles)) {
-//                 invalidStates.add(pathConfig);
-//             }
-//        }
-        for (ASVConfig c : path) {
-            if (tester.hasCollision(c, obstacles)) {
-                invalidStates.add(c);
+    public List<ASVConfig> generateConfigs(ASVConfig originalConfig) {
+        List<ASVConfig> validConfigs = new ArrayList<>();
+        while (validConfigs.size() < 50) {
+            ASVConfig newConfig = new ASVConfig(originalConfig);
+            double range = 180 + (newConfig.getASVCount() - 3) * 180;
+            for (int i = 1; i < originalConfig.getASVCount() - 1; i++) {
+                double initialAngleDegrees = Math.random() * range * 2 - range;
+                rotateASV(newConfig, i, (int) initialAngleDegrees);
+                range -= initialAngleDegrees;
+            }
+            rotateASV(newConfig, newConfig.getASVCount() - 1, (int) range);
+            if (tester.isValidConfig(newConfig, obstacleList)) {
+                validConfigs.add(newConfig);
             }
         }
-        return invalidStates;
+        return validConfigs;
     }
 
-    public ASVConfig moveASV(ASVConfig config, Point2D newPos) {
+    public ASVConfig getBestConfig(ASVConfig invalidConfig, List<ASVConfig> list) {
+        double dist = 2;
+        ASVConfig best = new ASVConfig(list.get(0));
+        for (ASVConfig asvConfig : list) {
+            double tempDist = 0;
+            for (int i = 0; i < asvConfig.getASVPositions().size(); i++) {
+                dist += asvConfig.getPosition(i).distance(invalidConfig.getPosition(i));
+            }
+            if (tempDist < dist ) {
+                best = asvConfig;
+            }
+        }
+        return best;
+    }
+
+    private ASVConfig moveASV(ASVConfig config, Point2D newPos) {
         ASVConfig newConfig = new ASVConfig(config);
         Point2D anchorPoint = config.getPosition(0);
         // Configure asvs relative to parent.
@@ -215,86 +218,79 @@ public class SearchAgent {
         return newConfig;
     }
 
-    public Point2D rotatePoint(Point2D anchorPoint, Point2D point, int degree) {
-        double x = point.getX() - anchorPoint.getX();
-        double h = point.distance(anchorPoint);
-        double currentRad = Math.acos(x/h);
-        double currentDeg = Math.toDegrees(currentRad);
-        currentDeg += degree;
-        currentRad = Math.toRadians(currentDeg);
+    private void rotatePoint(Point2D anchorPoint, Point2D point, int degree) {
+        double h = anchorPoint.distance(point);
+        double currentRad = Math.toRadians(degree);
 
         // New Pos
         double newX = h * Math.cos(currentRad) + anchorPoint.getX();
         double newY = h * Math.sin(currentRad) + anchorPoint.getY();
-        return new Point2D.Double(newX, newY);
+        point.setLocation(newX, newY);
     }
 
-    public ASVConfig rotateASV(ASVConfig config, int pointNumber, int degrees) {
-        for (int i = 1; i < config.getASVCount(); i++) {
+    private void rotateASV(ASVConfig config, int pointNumber, int degrees) {
+        ASVConfig oc = new ASVConfig(config);
+        for (int i = pointNumber; i < config.getASVCount(); i++) {
             Point2D p = config.getPosition(i);
-            p = rotatePoint(config.getPosition(pointNumber - 1), p, degrees);
-            config.getPosition(i).setLocation(p);
+            rotatePoint(oc.getPosition(i - 1), p, degrees);
         }
-
-        return config;
     }
 
-    public List<ASVConfig> finalSolution(List<ASVConfig> path) {
+    public List<ASVConfig> tracePath(List<ASVConfig> path, double stepSize) {
         List<ASVConfig> finalSolution = new ArrayList<>();
         int asvSize = path.get(0).getASVCount();
         for (int i = 0; i < path.size() - 1; i++) {
             ASVConfig c = path.get(i);
             ASVConfig d = path.get(i + 1);
             double[] distances = new double[asvSize];
-            int[] numIterations = new int[asvSize];
+            int[] pointIterations = new int[asvSize];
             int maxIterations = 0;
-            double[] maxX = new double[asvSize];
-            double[] maxY = new double[asvSize];
+            double[] xChangeRate = new double[asvSize];
+            double[] yChangeRate = new double[asvSize];
 
             for (int x = 0; x < asvSize; x++) {
                 distances[x] = c.getPosition(x).distance(d.getPosition(x));
-                numIterations[x] = (int) Math.ceil(distances[x] / 0.001);
-                if (numIterations[x] > maxIterations) {
-                    maxIterations = numIterations[x];
+                pointIterations[x] = (int) Math.ceil(distances[x] / stepSize);
+                if (pointIterations[x] > maxIterations) {
+                    maxIterations = pointIterations[x];
                 }
-                maxX[x] = (d.getPosition(x).getX() - c.getPosition(x).getX()) / numIterations[x];
-                maxY[x] = (d.getPosition(x).getY() - c.getPosition(x).getY()) / numIterations[x];
+                xChangeRate[x] = pointIterations[x] / (d.getPosition(x).getX() - c.getPosition(x).getX());
+                yChangeRate[x] = pointIterations[x] / (d.getPosition(x).getY() - c.getPosition(x).getY());
             }
 
-
-            ASVConfig t = new ASVConfig(c);
             for (int x = 0; x < maxIterations; x++) {
-                ASVConfig tt = new ASVConfig(c);
-                for (int a = 0; a < asvSize; a++) {
-                    if (x < numIterations[a]) {
-                        double x1 = t.getPosition(a).getX() + maxX[a];
-                        double y1 = t.getPosition(a).getY() + maxY[a];
-                        tt.getPosition(a).setLocation(x1, y1);
-                    } else {
-                        double x1 = t.getPosition(a).getX() + maxX[maxX.length - 1];
-                        double y1 = t.getPosition(a).getY() + maxY[maxY.length - 1];
-                        tt.getPosition(a).setLocation(x1, y1);
-                    }
-                    finalSolution.add(tt);
-                    t = tt;
+                ASVConfig newASV = new ASVConfig(c);
+                for (int p = 0; p < newASV.getASVCount(); p++) {
+                    Point2D point = new Point2D.Double(x * xChangeRate[p] + newASV.getPosition(p).getX(),
+                            x * yChangeRate[p] + newASV.getPosition(p).getY());
+                    newASV.getPosition(p).setLocation(point);
                 }
+                finalSolution.add(newASV);
             }
         }
         return finalSolution;
     }
 
-    public boolean checkValidConfig(ASVConfig config, List<Obstacle> obstacleList) {
-        for (int i = 0; i < config.getASVCount() - 1; i++) {
-            if (!checkValidPoint(config.getPosition(i)) || !checkValidPoint(config.getPosition(i + 1))) {
-                return false;
-            }
-            Line2D line = new Line2D.Double(config.getPosition(i), config.getPosition(i + 1));
-            for (Obstacle o : obstacleList) {
-                if (line.intersects(o.getRect())) {
-                    return false;
+    public void run() {
+        List<Point2D> sample = samplePoints(2000,0, 0, 1, 1);
+        ASVConfig initialConfig = problemSpec.getInitialState();
+        ASVConfig goalConfig = problemSpec.getGoalState();
+
+        List<Node> path = findPath(sample, initialConfig, goalConfig);
+        List<ASVConfig> asvPath = new ArrayList<>();
+        for (Node node : path) {
+            asvPath.add(node.config);
+        }
+        for (ASVConfig asvConfig : asvPath) {
+            if (!tester.isValidConfig(asvConfig, obstacleList)) {
+                List<ASVConfig> possibleConfigs = generateConfigs(asvConfig);
+                ASVConfig best = getBestConfig(asvConfig, possibleConfigs);
+                for (int c = asvPath.indexOf(asvConfig); c < asvPath.size(); c++) {
+                    asvPath.set(c, best);
                 }
             }
         }
-        return true;
+        asvPath = tracePath(asvPath, 0.001);
+        problemSpec.setPath(asvPath);
     }
 }

@@ -52,7 +52,7 @@ public class Tester {
 	}
 
 	/** Remembers the specifications of the problem. */
-	private ProblemSpec ps = new ProblemSpec();
+	public ProblemSpec ps = new ProblemSpec();
 	/** The maximum error allowed by this Tester */
 	private double maxError;
 	/** The workspace bounds, with allowable error. */
@@ -571,6 +571,10 @@ public class Tester {
 			System.out.println("Passed.");
 			return true;
 		}
+	}
+
+	public boolean isValidConfig(ASVConfig cfg, List<Obstacle> obstacles) {
+		return !hasCollision(cfg, obstacles) && hasEnoughArea(cfg) && isConvex(cfg);
 	}
 
 	/**
