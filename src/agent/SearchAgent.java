@@ -234,24 +234,24 @@ public class SearchAgent {
     }
 
     public List<ASVConfig> transform(ASVConfig initialCfg, ASVConfig goalConfig) {
-        List<ASVConfig> finalSolution = new ArrayList<>();
+        List<ASVConfig> finalSolution = new ArrayList<>(); 
         finalSolution.add(initialCfg);
         while (true) {
             ASVConfig cfg = new ASVConfig(finalSolution.get(finalSolution.size() - 1));
             for (int i = 0; i < initialCfg.getASVCount(); i++) {
                 double yDist = goalConfig.getPosition(i).getY() - cfg.getPosition(i).getY();
+                double xDist = goalConfig.getPosition(i).getX() - cfg.getPosition(i).getX();
+                double angle = Math.atan2(yDist , xDist);
                 double distance = goalConfig.getPosition(i).distance(cfg.getPosition(i));
-                double angle = Math.asin(yDist / distance);
-                double stepSize = distance > 0.001 ? 0.001 : distance;
-                double xRate = stepSize * Math.cos(angle);
-                double yRate = stepSize * Math.sin(angle);
+                double stepDist = distance > 0.001 ? 0.001 : Math.abs(distance);
+
+                double xRate = stepDist * Math.cos(angle);
+                double yRate = stepDist * Math.sin(angle);
+
                 double x = cfg.getPosition(i).getX() + xRate;
                 double y = cfg.getPosition(i).getY() + yRate;
-
                 cfg.getPosition(i).setLocation(x, y);
-
-                double totalDistance = cfg.totalDistance(goalConfig);
-                if (totalDistance < 0.001) {
+                if (cfg.totalDistance(goalConfig) < 0.001) {
                     return finalSolution;
                 }
             }

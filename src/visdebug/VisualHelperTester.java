@@ -74,20 +74,17 @@ public class VisualHelperTester {
 				}
 			}
 
-//			}
+		}
+		List<ASVConfig> finalPath = new ArrayList<>();
+		for (int i = 0; i < asvPath.size() - 1; i++) {
+			ASVConfig initial = asvPath.get(i);
+			ASVConfig goal = asvPath.get(i + 1);
+			finalPath.addAll(agent.transform(initial, goal));
 		}
 
-//		List<ASVConfig> finalPath = new ArrayList<>();
-//		for (int i = 0; i < asvPath.size() - 1; i++) {
-//			ASVConfig initial = asvPath.get(i);
-//			ASVConfig goal = asvPath.get(i + 1);
-//			finalPath.addAll(agent.transform(initial, goal));
-//		}
-//
-//		for (ASVConfig asvConfig : finalPath) {
-//			vh.addLinkedPoints(asvConfig.getASVPositions());
-//		}
+		for (ASVConfig asvConfig : finalPath) {
+			vh.addLinkedPoints(asvConfig.getASVPositions());
+		}
 		vh.repaint();
 	}
-
 }
