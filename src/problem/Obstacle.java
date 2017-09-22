@@ -32,6 +32,10 @@ public class Obstacle {
 		this.rect = new Rectangle2D.Double(x, y, w, h);
 	}
 
+	public Obstacle (Rectangle2D rect) {
+		this.rect = rect;
+	}
+
 	/**
 	 * Constructs an obstacle from the representation used in the input file:
 	 * that is, the x- and y- coordinates of all of the corners of the

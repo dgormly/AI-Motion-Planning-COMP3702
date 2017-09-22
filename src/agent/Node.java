@@ -21,6 +21,17 @@ public class Node implements Comparable<Node> {
         this.config = config;
     }
 
+    public Node(Node parent, Point2D point) {
+        this.parent = parent;
+        this.children = new ArrayList<>();
+        this.point = point;
+        this.config = config;
+    }
+
+    public List<Node> getChildren() {
+        for ()
+    }
+
     public int compareTo(Node o) {
         return Double.compare(this.pathCost, o.pathCost);
     }
