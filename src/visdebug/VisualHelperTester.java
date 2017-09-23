@@ -24,7 +24,7 @@ public class VisualHelperTester {
 	public static void main(String[] args) throws IOException, InterruptedException {
 		ProblemSpec problemSpec = new ProblemSpec();
 		try {
-			problemSpec.loadProblem("testcases/3ASV.txt");
+			problemSpec.loadProblem("testcases/3ASV-easy.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -74,32 +74,16 @@ public class VisualHelperTester {
 		}
 		vh.clearLinkedPoints();
 
-		for (int i = 1; i < finalPath.size(); i++) {
-			Point2D pos = finalPath.get(i);
-			ASVConfig c = agent.moveASV(asvFinalPath.get(i - 1), pos);
-			if (!tester.isValidConfig(c, agent.expandedList)) {
-				c = agent.getBestConfig(c, agent.generateConfigs(c));
-				for (int x = i; x < finalPath.size(); x++) {
-					asvFinalPath.set(x, c);
-				}
-				vh.clearLinkedPoints();
-				vh.addLinkedPoints(c.getASVPositions());
-				vh.repaint();
-				vh.waitKey();
-			}
-			asvFinalPath.set(i, c);
-			//vh.addLinkedPoints(c.getASVPositions());
+		List<Node> finalNode = agent.searchConfigs(finalPath, initialConfig);
+		List<ASVConfig> config = new ArrayList<>();
+		for (Node n : finalNode) {
+			config.add(n.config);
 		}
-//		List<ASVConfig> finalPath = new ArrayList<>();
-//		for (int i = 0; i < asvPath.size() - 1; i++) {
-//			ASVConfig initial = asvPath.get(i);
-//			ASVConfig goal = asvPath.get(i + 1);
-//			finalPath.addAll(agent.transform(initial, goal));
-//		}
+		for (ASVConfig asvConfig : config) {
+			vh.addLinkedPoints(asvConfig.getASVPositions());
+		}
 
-//		for (ASVConfig asvConfig : finalPath) {
-//			vh.addLinkedPoints(asvConfig.getASVPositions());
-//		}
 		vh.repaint();
+		vh.waitKey();
 	}
 }

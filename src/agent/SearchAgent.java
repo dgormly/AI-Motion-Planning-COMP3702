@@ -207,36 +207,18 @@ public class SearchAgent {
     public List<ASVConfig> generateConfigs(ASVConfig originalConfig) {
         List<ASVConfig> validConfigs = new ArrayList<>();
         List<Double> validRangle = new ArrayList<>();
+        /* Fine tune this to get the right distances in test. */
         validRangle.add(0.05);
         validRangle.add(0.00);
         validRangle.add(-0.05);
-        int pointOutOfBounds = 100;
 
-        // Check Lines
         for (int i = 1; i < originalConfig.getASVPositions().size(); i++) {
-            if (pointOutOfBounds == 100) {
-                Line2D line = new Line2D.Double(originalConfig.getPosition(i - 1), originalConfig.getPosition(i));
-                for (Obstacle obstacle : obstacleList) {
-                    if (line.intersects(obstacle.getRect())) {
-                        pointOutOfBounds = i;
-                    }
+            for (Double aDouble : validRangle) {
+                ASVConfig c = new ASVConfig(originalConfig);
+                rotateASV(c, i, aDouble);
+                if (tester.isValidConfig(c, obstacleList)) {
+                    validConfigs.add(c);
                 }
-            }
-        }
-
-        for (int i = 1; i < originalConfig.getASVPositions().size(); i++) {
-            Point2D p = originalConfig.getPosition(i);
-            if (!checkValidPoint(p)) {
-                pointOutOfBounds = i-1;
-            }
-        }
-
-        while (validConfigs.size() < 1) {
-            ASVConfig newConfig = new ASVConfig(originalConfig);
-            double angle = validRangle.get(new Random().nextInt(validRangle.size()));
-            rotateASV(newConfig, pointOutOfBounds, Math.toDegrees(angle));
-            if (tester.isValidConfig(newConfig, obstacleList)) {
-                validConfigs.add(newConfig);
             }
         }
         return validConfigs;
@@ -347,6 +329,41 @@ public class SearchAgent {
                 finalPath.addAll(transform(initial, goal));
             }
             problemSpec.setPath(finalPath);
+        }
+    }
+
+    public List<Node> searchConfigs(List<Point2D> path, ASVConfig cfg) {
+        // Start Search
+        System.out.println(path.size());
+        Node parent = new Node(null, path.get(0), 0, cfg);
+        Set<ASVConfig> historySet = new HashSet<>();
+        Stack<Node> container = new Stack<>();
+        container.add(parent);
+
+        while (true) {
+            Node current = container.pop();
+            if (historySet.contains(current.config)) {
+                continue;
+            }
+            historySet.add(current.config);
+            int pointIndex = path.indexOf(current.point) + 1;
+            if (pointIndex == path.size()) {
+                List<Node> finalPath = new ArrayList<>();
+                while (current.parent != null) {
+                    finalPath.add(current);
+                    current = current.parent;
+                }
+                finalPath.add(current);
+                System.out.println("SOLUTION FOUND");
+                return finalPath;
+            }
+                    /* Create nodes of all possible configs. */
+            List<ASVConfig> configList = generateConfigs(current.config);
+            for (ASVConfig asvConfig : configList) {
+                ASVConfig c = moveASV(asvConfig, path.get(pointIndex));
+                Node n = new Node(current, path.get(path.indexOf(current.point)), c.totalDistance(current.config), c);
+                container.add(n);
+            }
         }
     }
 }
