@@ -39,14 +39,27 @@ public class SearchAgent {
 
     /**
      * Creates a graph from the given List.
-     * 
+     *
      * @param vertices
      * @return
      */
-    public List<List<Point2D>> createGraph(List<Point2D> vertices) {
+    public List<List<Point2D>> constructRoadmap(List<Point2D> vertices) {
+        /*
+        Loop
+            Sample a configuration q uniformly at random from the state space.
+            if q is not in collision.
+                Add q as a vertice to the state graph.
+                For all q' within D distance from q in state graph.
+                    If the line segment  (in C space) between q and q’ is not in-collision,
+                     add an edge qq’ to the state graph.
+         */
+
         int size = vertices.size();
         Set<Set<Point2D>> edges = new HashSet<>();
         adjacencyGraph = new int[size][size];
+
+
+
         for (Point2D p : vertices) {
             List<Point2D> points = getPointsInRange(0.05, p, vertices);
             int pos = vertices.indexOf(p);
@@ -127,6 +140,18 @@ public class SearchAgent {
         return points;
     }
 
+
+    /**
+     * Get vertices from map.
+     *
+     * @param distSize
+     *      Distance to search.
+     * @param point
+     *      Vertice to scan around.
+     * @param vertices
+     *      Vertices to scan through.
+     * @return
+     */
     public List<Point2D> getPointsInRange(double distSize, Point2D point, List<Point2D> vertices) {
         List<Point2D> returnList = new ArrayList<>();
         for (Point2D p : vertices) {
@@ -145,9 +170,12 @@ public class SearchAgent {
      * Finds a path from a list of vertice using A* search
      * Heuristic distance to the final config.
      *
-     * @param vertices to search through.
-     * @param start, the starting configuration.
-     * @param goal, The end configuration.
+     * @param vertices
+     *      to search through.
+     * @param start
+     *      the starting configuration.
+     * @param goal
+     *      the end configuration.
      * @return List of Nodes containing the path.
      */
     public List<Node> findPath(List<Point2D> vertices, ASVConfig start, ASVConfig goal) {
@@ -197,6 +225,7 @@ public class SearchAgent {
      * Checks if a given point collides with any obstacles.
      *
      * @param point
+     *      checks if a point is in a valid position.
      * @return True if point is in an obstacle.
      */
     private static boolean checkValidPoint(Point2D point, List<Obstacle> obstacles) {
