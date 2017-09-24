@@ -31,6 +31,11 @@ public class ASVConfig {
 		}
 	}
 
+	public ASVConfig(Point2D anchor, double[] angles, ASVConfig cfg) {
+		asvPositions = cfg.getASVPositions();
+		setAngles(angles);
+	}
+
 	/**
 	 * Constructs an ASVConfig from a space-separated string of x- and y-
 	 * coordinates
