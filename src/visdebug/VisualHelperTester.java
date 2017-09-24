@@ -34,7 +34,16 @@ public class VisualHelperTester {
 		List<Obstacle> obstacleList = problemSpec.getObstacles();
 		List<Rectangle2D> rectList = new ArrayList<>();
 
+		double[] angles = {90, 60};
+	vh.addLinkedPoints(goalConfig.getASVPositions());
+	vh.repaint();
+	vh.waitKey();
+		goalConfig.setAngles(angles);
 		List<ASVConfig> path = ASVConfig.transform(initialConfig, goalConfig);
-		tester.getInvalidBoomStates();
+
+		vh.addLinkedPoints(goalConfig.getASVPositions());
+		double[] results = goalConfig.getAngles();
+		vh.repaint();
+
 	}
 }

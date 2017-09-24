@@ -16,7 +16,6 @@ import java.awt.geom.Point2D;
 public class ASVConfig {
 	/** The position of each ASV */
 	private List<Point2D> asvPositions = new ArrayList<Point2D>();
-	private double[] angles;
 
 	/**
 	 * Constructor. Takes an array of 2n x and y coordinates, where n is the
@@ -30,7 +29,6 @@ public class ASVConfig {
 			asvPositions.add(new Point2D.Double(coords[i * 2],
 					coords[i * 2 + 1]));
 		}
-		angles = getAngles();
 	}
 
 	/**
@@ -159,84 +157,43 @@ public class ASVConfig {
 
 	/**
 	 * Get all the angles from the config.
-	 * THIS HASN"T BEEN TESTED!
+	 *
 	 * @return angles in ascending order.
 	 */
 	public double[] getAngles() {
 		double[] angles = new double[getASVCount() - 1];
-		for (int i = 1; i < asvPositions.size(); i++) {
-			Point2D originalPoint = asvPositions.get(i - 1);
-			Point2D p = asvPositions.get(i);
-			double x = p.getX() - originalPoint.getX();
-			double y = p.getY() - originalPoint.getY();
+		for (int i = 0; i < getASVCount() - 1; i++) {
+			Point2D a = asvPositions.get(i);
+			Point2D b = asvPositions.get(i + 1);
+			double x = b.getX() - a.getX();
+			double y = b.getY() - a.getY();
 			double angle = Math.atan2(y, x);
-			if (i != 1) {
-				angle += angles[i - 1];
+			if (i != 0) {
+				angle -= angles[i - 1];
 			}
-			angles[i] = angle;
+			angles[i] = Math.toDegrees(angle);
 		}
 		return angles;
 	}
 
-
-	/**
-	 * Rotates an arm around a join at a diameter of 0.001.
-	 *
-	 * @param anchorPoint
-	 * 			Joint to rotate.
-	 * @param point
-	 * 			Point to rotate around join.
-	 * @param degree
-	 * 			Amount of degrees to rotate arm.
-	 */
-	private void rotatePoint(int anchorPoint, int point, double degree) {
-		Point2D p1 = this.getPosition(anchorPoint);
-		Point2D p2 = this.getPosition(point);
-
-		double h = p1.distance(p2);
-		double rad = Math.toRadians(degree);
-		double changeX = p2.getX() - p1.getX();
-		double changeY = p2.getY() - p1.getY();
-		double currentRad = Math.atan2(changeY, changeX);
-
-		// New Pos
-		double newX = h * Math.cos(rad + currentRad) + p1.getX();
-		double newY = h * Math.sin(currentRad + rad) + p1.getY();
-		p2.setLocation(newX, newY);
-	}
-
-	/**
-	 * Rotates the whole configuration from a particular joint.
-	 *
-	 * @param pointNumber
-	 * 		The point to rotate. 1 Rotates everything.
-	 * @param degrees
-	 * 		rotates the point between [0 - 360]
-	 */
-	public void rotate(int pointNumber, double degrees) {
-		for (int i = pointNumber; i < this.getASVCount(); i++) {
-			rotatePoint(i - 1, i, degrees);
+	public void setAngles(double[] angles) {
+		for (int i = 0; i < angles.length; i++) {
+			double angle;
+			if (i == 0) {
+				 angle = angles[i];
+			} else {
+				angle = angles[i] - angles[i - 1];
+			}
+			angle = Math.toRadians(angle);
+			Point2D a = this.getPosition(i);
+			Point2D b = this.getPosition(i + 1);
+			double newX = 0.05 * Math.cos(angle) + a.getX();
+			double newY = 0.05 * Math.sin(angle) + a.getY();
+			b.setLocation(newX, newY);
 		}
 	}
 
 
-	/**
-	 * Moves the configuring to a given point.
-	 *
-	 * @param newPos
-	 * 		The point to place the configuration.
-	 */
-	public void move(Point2D newPos) {
-		Point2D anchorPoint = this.getPosition(0);
-		// Configure asvs relative to parent.
-		for (int i = 1; i < this.getASVCount(); i++) {
-			Point2D p = this.getPosition(i);
-			double differenceX = p.getX() - anchorPoint.getX();
-			double differenceY = p.getY() - anchorPoint.getY();
-			p.setLocation(newPos.getX() + differenceX, newPos.getY() + differenceY);
-		}
-		this.getPosition(0).setLocation(newPos);
-	}
 
 	/**
 	 * Samples an area ASVConfigs for a given point.
@@ -251,17 +208,17 @@ public class ASVConfig {
 
 		// Begins generating sample configurations.
 		while (validConfigs.size() < numberOfConfigs) {
-			ASVConfig newConfig = new ASVConfig(this);
-			double range = 180 + (this.getASVCount() - 3) * 180;
-			for (int i = 1; i < this.getASVCount(); i++) {
-				double initialAngleDegrees = Math.random() * range * 2 - range;
-				rotate( i, (int) initialAngleDegrees);
-				range -= initialAngleDegrees;
-			}
-			rotate(newConfig.getASVCount() - 1, (int) range);
-			if (tester.isValidConfig(newConfig, obstacles)) {
-				validConfigs.add(newConfig);
-			}
+//			ASVConfig newConfig = new ASVConfig(this);
+//			double range = 180 + (this.getASVCount() - 3) * 180;
+//			for (int i = 1; i < this.getASVCount(); i++) {
+//				double initialAngleDegrees = Math.random() * range * 2 - range;
+//				rotate( i, (int) initialAngleDegrees);
+//				range -= initialAngleDegrees;
+//			}
+//			rotate(newConfig.getASVCount() - 1, (int) range);
+//			if (tester.isValidConfig(newConfig, obstacles)) {
+//				validConfigs.add(newConfig);
+//			}
 		}
 		return validConfigs;
 	}
@@ -295,30 +252,70 @@ public class ASVConfig {
 	 * @return Segment between two configurations.
 	 */
 	public static List<ASVConfig> transform(ASVConfig initialCfg, ASVConfig goalConfig) {
-		List<ASVConfig> finalSolution = new ArrayList<>();
-		finalSolution.add(initialCfg);
-		while (true) {
-			ASVConfig cfg = new ASVConfig(finalSolution.get(finalSolution.size() - 1));
-			for (int i = 0; i < initialCfg.getASVCount(); i++) {
-				double yDist = goalConfig.getPosition(i).getY() - cfg.getPosition(i).getY();
-				double xDist = goalConfig.getPosition(i).getX() - cfg.getPosition(i).getX();
-				double angle = Math.atan2(yDist , xDist);
-				double distance = goalConfig.getPosition(i).distance(cfg.getPosition(i));
-				double stepDist = distance > 0.001 ? 0.001 : Math.abs(distance);
+		int asvCount = initialCfg.getASVCount();
 
-				double xRate = stepDist * Math.cos(angle);
-				double yRate = stepDist * Math.sin(angle);
+		/* Setup rate of change for X and Y */
+		double pointDistance[] = new double[asvCount];
+		double x[] = new double[asvCount];
+		double y[] = new double[asvCount];
+		double m[] = new double[asvCount];
 
-				double x = cfg.getPosition(i).getX() + xRate;
-				double y = cfg.getPosition(i).getY() + yRate;
-				cfg.getPosition(i).setLocation(x, y);
-				if (cfg.totalDistance(goalConfig) < 0.001) {
-					return finalSolution;
-				}
-			}
-			finalSolution.add(cfg);
+		for (int i = 0; i < asvCount; i++) {
+			Point2D p1 = initialCfg.getPosition(i);
+			Point2D p2 = goalConfig.getPosition(i);
+
+			pointDistance[i] = p1.distance(p2);
+			x[i] = p2.getX() - p1.getX();
+			y[i] = p2.getY() - p2.getY();
 		}
+
+		double maxLength = 0;
+
+		// Get max distance.
+		for (int i = 0; i < asvCount; i++) {
+			if (pointDistance[i] > maxLength) {
+				maxLength = pointDistance[i];
+			}
+		}
+
+		int iterations = (int) (maxLength / 0.001);
+
+		// Convert x[] and y[] to rates.
+		for (int i = 0; i < asvCount; i++) {
+			y[i] /= iterations;
+			x[i] /= iterations;
+		}
+
+
+		/* Loop */
+		List<ASVConfig> segment = new ArrayList<>();
+		segment.add(initialCfg);
+		for (int i = 0; i < iterations; i++) {
+			ASVConfig cfg = new ASVConfig(segment.get(i));
+			ASVConfig prev = segment.get(i);
+
+			for (int j = 0; j < asvCount; j++) {
+				Point2D newSpot = new Point2D.Double(x[j] + prev.getPosition(j).getX(), y[j] + prev.getPosition(j).getY());
+				cfg.getPosition(j).setLocation(newSpot);
+			}
+			segment.add(cfg);
+		}
+		return segment;
 	}
 
+	@Override
+	public boolean equals(Object o) {
 
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		ASVConfig asvConfig = (ASVConfig) o;
+
+		return asvPositions != null ? asvPositions.equals(asvConfig.asvPositions) : asvConfig.asvPositions == null;
+	}
+
+	@Override
+	public int hashCode() {
+		return asvPositions != null ? asvPositions.hashCode() : 0;
+	}
 }

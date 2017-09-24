@@ -220,10 +220,10 @@ public class SearchAgent {
                     return path;
                 }
                 double cost = p.distance(current.point) + p.distance(closestGoalPoint);
-                ASVConfig newConfig = new ASVConfig(current.config);
-                newConfig.move(p);
-                Node n = new Node(current, p, cost, newConfig);
-                container.add(n);
+//                ASVConfig newConfig = new ASVConfig(current.config);
+//                newConfig.move(p);
+//                Node n = new Node(current, p, cost, newConfig);
+//                container.add(n);
             }
         }
     }
@@ -295,11 +295,10 @@ public class SearchAgent {
     }
 
     public void run() {
-        List<Point2D> sample = sampleStateGraph(5000, new Rectangle2D.Double(0,0,1,1));
-        ASVConfig initialConfig = problemSpec.getInitialState();
-        ASVConfig goalConfig = problemSpec.getGoalState();
-        goalConfig.rotate(1, 90);
-        List<ASVConfig> path = ASVConfig.transform(initialConfig, goalConfig);
-        problemSpec.setPath(path);
+//        ASVConfig initialConfig = problemSpec.getInitialState();
+//        ASVConfig goalConfig = problemSpec.getGoalState();
+//        goalConfig.rotate(1, 90);
+//        List<ASVConfig> path = ASVConfig.transform(initialConfig, goalConfig);
+//        problemSpec.setPath(path);
     }
 }
