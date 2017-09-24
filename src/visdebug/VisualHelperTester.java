@@ -20,7 +20,7 @@ public class VisualHelperTester {
 		ProblemSpec problemSpec = new ProblemSpec();
 		problemSpec.assumeDirectSolution();
 		try {
-			problemSpec.loadProblem("testcases/3ASV-easy.txt");
+			problemSpec.loadProblem("testcases/7ASV-easy.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -34,11 +34,10 @@ public class VisualHelperTester {
 		List<Obstacle> obstacleList = problemSpec.getObstacles();
 		List<Rectangle2D> rectList = new ArrayList<>();
 
-		double[] angles = {90, 60};
+
 	vh.addLinkedPoints(goalConfig.getASVPositions());
 	vh.repaint();
 	vh.waitKey();
-		goalConfig.setAngles(angles);
 		List<ASVConfig> path = ASVConfig.transform(initialConfig, goalConfig);
 
 		vh.addLinkedPoints(goalConfig.getASVPositions());

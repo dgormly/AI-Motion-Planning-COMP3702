@@ -33,6 +33,7 @@ public class ASVConfig {
 
 	public ASVConfig(Point2D anchor, double[] angles, ASVConfig cfg) {
 		asvPositions = cfg.getASVPositions();
+		asvPositions.set(0, anchor);
 		setAngles(angles);
 	}
 
@@ -183,17 +184,13 @@ public class ASVConfig {
 
 	public void setAngles(double[] angles) {
 		for (int i = 0; i < angles.length; i++) {
-			double angle;
-			if (i == 0) {
-				 angle = angles[i];
-			} else {
-				angle = angles[i] - angles[i - 1];
-			}
-			angle = Math.toRadians(angle);
+			double currentAngle = 0;
+			currentAngle += angles[i];
+			currentAngle = Math.toRadians(currentAngle);
 			Point2D a = this.getPosition(i);
 			Point2D b = this.getPosition(i + 1);
-			double newX = 0.05 * Math.cos(angle) + a.getX();
-			double newY = 0.05 * Math.sin(angle) + a.getY();
+			double newX = 0.05 * Math.cos(currentAngle) + a.getX();
+			double newY = 0.05 * Math.sin(currentAngle) + a.getY();
 			b.setLocation(newX, newY);
 		}
 	}
@@ -257,70 +254,32 @@ public class ASVConfig {
 	 * @return Segment between two configurations.
 	 */
 	public static List<ASVConfig> transform(ASVConfig initialCfg, ASVConfig goalConfig) {
-		int asvCount = initialCfg.getASVCount();
+		List<ASVConfig> segment = new ArrayList<>();
 
 		/* Setup rate of change for X and Y */
-		double pointDistance[] = new double[asvCount];
-		double x[] = new double[asvCount];
-		double y[] = new double[asvCount];
-		double m[] = new double[asvCount];
+		double[] a = initialCfg.getAngles();
+		double[] b = goalConfig.getAngles();
+		double distance = initialCfg.maxDistance(goalConfig);
+		int iterations = (int) Math.ceil(distance / 0.001);
 
-		for (int i = 0; i < asvCount; i++) {
-			Point2D p1 = initialCfg.getPosition(i);
-			Point2D p2 = goalConfig.getPosition(i);
+		Point2D p1 = initialCfg.getPosition(0);
+		Point2D p2 = goalConfig.getPosition(0);
+		double cx = (p2.getX() - p1.getX()) / iterations;
+		double cy = (p2.getY() - p1.getX()) / iterations;
 
-			pointDistance[i] = p1.distance(p2);
-			x[i] = p2.getX() - p1.getX();
-			y[i] = p2.getY() - p2.getY();
-		}
-
-		double maxLength = 0;
-
-		// Get max distance.
-		for (int i = 0; i < asvCount; i++) {
-			if (pointDistance[i] > maxLength) {
-				maxLength = pointDistance[i];
+		for (int j = 0; j < iterations; j++) {
+			double[] tempAngle = new double[a.length];
+			for (int i = 0; i < a.length - 1; i++) {
+				tempAngle[i] = (j*((b[i] - a[i]) / iterations)) + a[i];
 			}
+			/* Get new anchor point. */
+			Point2D anchor = new Point2D.Double(j * cx + p1.getX(), j * cy + p1.getY());
+			ASVConfig tempCfg = new ASVConfig(anchor, tempAngle, initialCfg);
+			segment.add(tempCfg);
 		}
 
-		int iterations = (int) (maxLength / 0.001);
-
-		// Convert x[] and y[] to rates.
-		for (int i = 0; i < asvCount; i++) {
-			y[i] /= iterations;
-			x[i] /= iterations;
-		}
-
-
-		/* Loop */
-		List<ASVConfig> segment = new ArrayList<>();
-		segment.add(initialCfg);
-		for (int i = 0; i < iterations; i++) {
-			ASVConfig cfg = new ASVConfig(segment.get(i));
-			ASVConfig prev = segment.get(i);
-
-			for (int j = 0; j < asvCount; j++) {
-				Point2D newSpot = new Point2D.Double(x[j] + prev.getPosition(j).getX(), y[j] + prev.getPosition(j).getY());
-				cfg.getPosition(j).setLocation(newSpot);
-			}
-			segment.add(cfg);
-		}
 		return segment;
 	}
 
-	@Override
-	public boolean equals(Object o) {
 
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-
-		ASVConfig asvConfig = (ASVConfig) o;
-
-		return asvPositions != null ? asvPositions.equals(asvConfig.asvPositions) : asvConfig.asvPositions == null;
-	}
-
-	@Override
-	public int hashCode() {
-		return asvPositions != null ? asvPositions.hashCode() : 0;
-	}
 }
