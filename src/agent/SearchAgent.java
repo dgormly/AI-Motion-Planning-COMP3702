@@ -38,15 +38,17 @@ public class SearchAgent {
 
 
     /**
+     * Needs completely rewritting.
+     *
      * Creates a graph from the given List.
      *
      * @param vertices
      * @return
      */
-    public List<List<Point2D>> constructRoadmap(List<Point2D> vertices) {
+    public List<List<Point2D>> constructStateGraph(List<Point2D> vertices) {
         /*
         Loop
-            Sample a configuration q uniformly at random from the state space.
+            Sample a configuration q uniformly at random from the state space. - Insert sampling stategy.
             if q is not in collision.
                 Add q as a vertice to the state graph.
                 For all q' within D distance from q in state graph.
@@ -57,8 +59,6 @@ public class SearchAgent {
         int size = vertices.size();
         Set<Set<Point2D>> edges = new HashSet<>();
         adjacencyGraph = new int[size][size];
-
-
 
         for (Point2D p : vertices) {
             List<Point2D> points = getPointsInRange(0.05, p, vertices);
@@ -99,6 +99,8 @@ public class SearchAgent {
     }
 
 
+
+
     public Point2D getClosestPoint(Point2D point, List<Point2D> vertices) {
         Point2D closestPoint = new Point2D.Double();
         double dist = 100;
@@ -126,19 +128,6 @@ public class SearchAgent {
         return closestPoint;
     }
 
-    public List<Point2D> joinPoints(Point2D point1, Point2D point2) {
-        List<Point2D> points = new ArrayList<>();
-        points.add(point1);
-        double distance = point1.distance(point2) / 0.001;
-        double xRate = (point2.getX() - point1.getX()) / distance;
-        double yRate = (point2.getY() - point1.getY()) / distance;
-        for (int i = 0; i < distance; i++) {
-            Point2D prevPoint = points.get(i);
-            Point2D point = new Point2D.Double(xRate + prevPoint.getX(), yRate + prevPoint.getY());
-            points.add(point);
-        }
-        return points;
-    }
 
 
     /**
@@ -155,6 +144,7 @@ public class SearchAgent {
     public List<Point2D> getPointsInRange(double distSize, Point2D point, List<Point2D> vertices) {
         List<Point2D> returnList = new ArrayList<>();
         for (Point2D p : vertices) {
+
             if (point.equals(p)) {
                 continue;
             }
@@ -179,6 +169,24 @@ public class SearchAgent {
      * @return List of Nodes containing the path.
      */
     public List<Node> findPath(List<Point2D> vertices, ASVConfig start, ASVConfig goal) {
+        /*
+        While runtime < timeLimit AND path is not found repeat
+        Sample a configuration q with a suitable sampling strategy. if q is collision-free then
+        Add q to the graph G.
+        Connect q to existing vertices in G using valid edges. until n new vertices have been added to G.
+                Search G for a path.
+        */
+
+        /*
+        Given an initial & a goal configurations,
+        Find the vertex qi nearest to the initial configuration,
+            where the straight line segment between initial configuration & qi is collision free.
+        Find the vertex qg nearest to the goal configuration,
+            where the straight line segment between goal configuration & qg is collision free.
+        Find a path from qi to qg using the search algorithms we have discussed (blind/informed search).
+         */
+
+
         Point2D closestStartPoint = getClosestPoint(start.getPosition(0), vertices);
         Point2D closestGoalPoint = getClosestPoint(goal.getPosition(0), vertices);
 
@@ -269,38 +277,29 @@ public class SearchAgent {
     }
 
 
+    /**
+     * Checks if a segment is valid between two configurations.
+     *
+     * @param cfg1
+     * @param cfg2
+     * @return True if all configurations are valid in the segment.
+     */
+    public boolean isValidSegment(ASVConfig cfg1, ASVConfig cfg2) {
+        List<ASVConfig> segemnt = ASVConfig.transform(cfg1, cfg2);
+        for (ASVConfig asvConfig : segemnt) {
+            if (!tester.isValidConfig(asvConfig, obstacles)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public void run() {
         List<Point2D> sample = sampleStateGraph(5000, new Rectangle2D.Double(0,0,1,1));
         ASVConfig initialConfig = problemSpec.getInitialState();
         ASVConfig goalConfig = problemSpec.getGoalState();
-
-        List<Node> path = findPath(sample, initialConfig, goalConfig);
-        List<ASVConfig> asvPath = new ArrayList<>();
-        for (Node node : path) {
-            asvPath.add(node.config);
-        }
-
-        boolean invalid = true;
-//        while (invalid) {
-//            for (ASVConfig asvConfig : asvPath) {
-//                if (!tester.isValidConfig(asvConfig, obstacles)) {
-//                    List<ASVConfig> possibleConfigs = generateConfigs(asvConfig);
-//                    ASVConfig best = getBestConfig(asvConfig, possibleConfigs);
-//                    for (int c = asvPath.indexOf(asvConfig); c < asvPath.size(); c++) {
-//                        ASVConfig temp = asvPath.get(c);
-//                        temp = moveASV(best, temp.getPosition(0));
-//                        asvPath.set(c, temp);
-//                    }
-//                }
-//            }
-//
-//            List<ASVConfig> finalPath = new ArrayList<>();
-//            for (int i = 0; i < asvPath.size() - 1; i++) {
-//                ASVConfig initial = asvPath.get(i);
-//                ASVConfig goal = asvPath.get(i + 1);
-//                finalPath.addAll(transform(initial, goal));
-//            }
-//            problemSpec.setPath(finalPath);
-//        }
+        goalConfig.rotate(1, 90);
+        List<ASVConfig> path = ASVConfig.transform(initialConfig, goalConfig);
+        problemSpec.setPath(path);
     }
 }

@@ -1,6 +1,5 @@
 package agent;
 
-import problem.ASVConfig;
 import problem.ProblemSpec;
 
 import java.io.*;

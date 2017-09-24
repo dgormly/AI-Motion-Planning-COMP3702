@@ -16,6 +16,7 @@ import java.awt.geom.Point2D;
 public class ASVConfig {
 	/** The position of each ASV */
 	private List<Point2D> asvPositions = new ArrayList<Point2D>();
+	private double[] angles;
 
 	/**
 	 * Constructor. Takes an array of 2n x and y coordinates, where n is the
@@ -29,6 +30,7 @@ public class ASVConfig {
 			asvPositions.add(new Point2D.Double(coords[i * 2],
 					coords[i * 2 + 1]));
 		}
+		angles = getAngles();
 	}
 
 	/**
@@ -160,18 +162,18 @@ public class ASVConfig {
 	 * THIS HASN"T BEEN TESTED!
 	 * @return angles in ascending order.
 	 */
-	public List<Double> getAngles() {
-		List<Double> angles = new ArrayList<>();
+	public double[] getAngles() {
+		double[] angles = new double[getASVCount() - 1];
 		for (int i = 1; i < asvPositions.size(); i++) {
 			Point2D originalPoint = asvPositions.get(i - 1);
 			Point2D p = asvPositions.get(i);
 			double x = p.getX() - originalPoint.getX();
 			double y = p.getY() - originalPoint.getY();
 			double angle = Math.atan2(y, x);
-			if (angles.size() > 1) {
-				angle += angles.get(i-1);
+			if (i != 1) {
+				angle += angles[i - 1];
 			}
-			angles.add(angle);
+			angles[i] = angle;
 		}
 		return angles;
 	}
@@ -290,7 +292,7 @@ public class ASVConfig {
 	 *
 	 * @param initialCfg
 	 * @param goalConfig
-	 * @return
+	 * @return Segment between two configurations.
 	 */
 	public static List<ASVConfig> transform(ASVConfig initialCfg, ASVConfig goalConfig) {
 		List<ASVConfig> finalSolution = new ArrayList<>();
