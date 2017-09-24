@@ -31,7 +31,7 @@ public class VisualHelperTester {
 
 		VisualHelper vh = new VisualHelper();
 		SearchAgent agent = new SearchAgent(problemSpec);
-		List<Point2D> sample = agent.samplePoints(20000, 0, 0, 1, 1);
+		List<Point2D> sample = agent.samplePoints(2000, 0, 0, 1, 1);
 		ASVConfig initialConfig = problemSpec.getInitialState();
 		ASVConfig goalConfig = problemSpec.getGoalState();
 		Tester tester = new Tester();
@@ -73,16 +73,6 @@ public class VisualHelperTester {
 			asvFinalPath.add(new ASVConfig(initialConfig));
 		}
 		vh.clearLinkedPoints();
-
-		List<Node> finalNode = agent.searchConfigs(finalPath, initialConfig);
-		List<ASVConfig> config = new ArrayList<>();
-		for (Node n : finalNode) {
-			config.add(n.config);
-		}
-		for (ASVConfig asvConfig : config) {
-			vh.addLinkedPoints(asvConfig.getASVPositions());
-		}
-
 		vh.repaint();
 		vh.waitKey();
 	}
