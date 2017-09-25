@@ -21,7 +21,7 @@ public class SearchAgent {
     public List<Point2D> sampleList;
     public int[][] adjacencyGraph;
     public Tester tester = new Tester();
-    public List<ASVConfig> asvPath = new ArrayList<>();
+    private Sample sampler;
 
 
     public SearchAgent(ProblemSpec problem) {
@@ -35,6 +35,7 @@ public class SearchAgent {
         }
         graph = new HashMap<>();
         sampleList = new ArrayList<>();
+        sampler = new Sample(obstacles, new Rectangle2D.Double(0,0,1,1));
     }
 
 
@@ -178,8 +179,19 @@ public class SearchAgent {
          */
 
 
+        // Sample around starting areas.
+        Point2D p = start.getPosition(0);
+        Point2D q = goal.getPosition(0);
+
+        Rectangle2D rs = new Rectangle2D.Double(p.getX() - 20, p.getY() - 20, p.getX() + 20, p.getY() + 20);
+        Rectangle2D rg = new Rectangle2D.Double(q.getX() - 20, q.getY() - 20, q.getX() + 20, q.getY() + 20);
+
         ASVConfig closestStartPoint = getClosestASV(start, vertices);
         ASVConfig closestGoalPoint = getClosestASV(goal, vertices);
+
+        if (closestGoalPoint == null || closestStartPoint == null) {
+            return null;
+        }
 
         /* Setup Search */
         // First node is start config, child is closest cfg.
@@ -200,7 +212,7 @@ public class SearchAgent {
                 continue;
             }
             historySet.add(current.config);
-            List<ASVConfig> children = getASVsInRange(0.2, current.config, vertices);
+            List<ASVConfig> children = getASVsInRange(0.3, current.config, vertices);
 
             for (ASVConfig c : children) {
                 if (c.equals(closestGoalPoint)) {
@@ -250,34 +262,6 @@ public class SearchAgent {
 
 
     /**
-     *
-     * @param sampleSize
-     * @param rect
-     * @return
-     */
-    public List<ASVConfig> sampleStateGraph(int numASVs,int sampleSize, Rectangle2D rect) {
-        List<ASVConfig> sampleList = new ArrayList();
-        for (int i = 0; i < sampleSize; i++) {
-            Point2D point;
-
-            do {
-                double xPoint = Math.abs(Math.random() * rect.getWidth() + rect.getX());
-                double yPoint = Math.abs(Math.random() * rect.getHeight() + rect.getY());
-                point = new Point2D.Double(xPoint, yPoint);
-            } while (!checkValidPoint(point, this.obstacles));
-
-            List<ASVConfig> configs = ASVConfig.sampleConfigurations(point, numASVs, 1, obstacles);
-            if (configs.size() == 0) {
-                --i;
-                continue;
-            }
-            sampleList.addAll(configs);
-        }
-        return sampleList;
-    }
-
-
-    /**
      * Checks if a segment is valid between two configurations.
      *
      * @param segment
@@ -319,9 +303,11 @@ public class SearchAgent {
         List<Node> path;
         List<ASVConfig> vertices = new ArrayList<>();
 
+        int count = 5;
         do {
-            vertices.addAll(sampleStateGraph(initialConfig.getASVCount(), 10, new Rectangle2D.Double(0, 0, 1, 1)));
+            vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), count));
             path = this.findPath(vertices, initialConfig, goalConfig);
+            count += count;
         } while (path == null);
 
         problemSpec.setPath(getSolution(path));

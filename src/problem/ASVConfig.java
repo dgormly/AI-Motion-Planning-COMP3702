@@ -249,16 +249,15 @@ public class ASVConfig {
 		Tester tester = new Tester();
 
 		// Begins generating sample configurations.
-		int counter = 0;
-		while (validConfigs.size() < numberOfConfigs && counter++ < 100) {
+		while (validConfigs.size() < numberOfConfigs) {
 			// Generate random numbers.
-			double range = 180 + (numASV - 3) * 180;
 			double[] rAngles = new double[numASV - 1];
-
+			double range = 360 + 180 * (numASV - 3);
 			for (int i = 1; i < numASV; i++) {
-				double initialAngleDegrees = Math.random() * range - range;
-				rAngles[i - 1] = normaliseAngle(initialAngleDegrees);
+				double initialAngleDegrees = Math.random() * range;
 				range -= initialAngleDegrees;
+				initialAngleDegrees = normaliseAngle(Math.toRadians(initialAngleDegrees));
+				rAngles[i - 1] = initialAngleDegrees;
 			}
 
 			// Check if angles are a valid combination.
