@@ -38,10 +38,12 @@ public class ASVConfig {
 	 *
 	 * @param anchor
 	 * @param angles
-	 * @param cfg
 	 */
-	public ASVConfig(Point2D anchor, double[] angles, ASVConfig cfg) {
-		asvPositions = cfg.getASVPositions();
+	public ASVConfig(Point2D anchor, double[] angles) {
+		for (int i = 0; i < angles.length + 1; i++) {
+			Point2D p = new Point2D.Double();
+			asvPositions.add(p);
+		}
 		asvPositions.set(0, anchor);
 		setAngles(angles);
 	}
@@ -214,7 +216,12 @@ public class ASVConfig {
 	}
 
 
-
+	/**
+	 * Sets the angles of each arm joint in the ASV.
+	 *
+	 * @param angles
+	 * 		the angle to set each asv at.
+	 */
 	public void setAngles(double[] angles) {
 		double currentAngle = 0;
 		for (int i = 0; i < angles.length; i++) {
@@ -237,23 +244,27 @@ public class ASVConfig {
 	 * 			number of configurations to sample.
 	 * @return List of valid configs from the sample spot.
 	 */
-	public List<ASVConfig> sampleConfigurations(int numberOfConfigs, List<Obstacle> obstacles) {
+	public static List<ASVConfig> sampleConfigurations(Point2D anchor,int numASV, int numberOfConfigs, List<Obstacle> obstacles) {
 		List<ASVConfig> validConfigs = new ArrayList<>();
 		Tester tester = new Tester();
 
 		// Begins generating sample configurations.
 		while (validConfigs.size() < numberOfConfigs) {
-//			ASVConfig newConfig = new ASVConfig(this);
-//			double range = 180 + (this.getASVCount() - 3) * 180;
-//			for (int i = 1; i < this.getASVCount(); i++) {
-//				double initialAngleDegrees = Math.random() * range * 2 - range;
-//				rotate( i, (int) initialAngleDegrees);
-//				range -= initialAngleDegrees;
-//			}
-//			rotate(newConfig.getASVCount() - 1, (int) range);
-//			if (tester.isValidConfig(newConfig, obstacles)) {
-//				validConfigs.add(newConfig);
-//			}
+			// Generate random numbers.
+			double range = 180 + (numASV - 3) * 180;
+			double[] rAngles = new double[numASV];
+
+			for (int i = 1; i < numASV; i++) {
+				double initialAngleDegrees = Math.random() * range * 2 - range;
+				rAngles[i] = normaliseAngle(initialAngleDegrees);
+				range -= initialAngleDegrees;
+			}
+
+			// Check if angles are a valid combination.
+			ASVConfig tempASV = new ASVConfig(anchor, rAngles);
+			if (tester.isValidConfig(tempASV, obstacles)) {
+				validConfigs.add(tempASV);
+			}
 		}
 		return validConfigs;
 	}
@@ -324,7 +335,7 @@ public class ASVConfig {
 				tempAngle[i] = j * cAngle[i] + initialCfg.getAngles()[i];
 			}
 			Point2D anchor = new Point2D.Double(j * (pointDistanceX / iterations) + p1.getX(), j * (pointDistanceY / iterations) + p1.getY());
-			ASVConfig tempCfg = new ASVConfig(anchor, tempAngle, segment.get(j - 1));
+			ASVConfig tempCfg = new ASVConfig(anchor, tempAngle);
 			segment.add(tempCfg);
 		}
 
