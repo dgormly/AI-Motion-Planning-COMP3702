@@ -292,11 +292,11 @@ public class SearchAgent {
      * @return True if all configurations are valid in the segment.
      */
     public boolean isValidSegment(List<ASVConfig> segment) {
-//        for (ASVConfig asvConfig : segment) {
-//            if (!tester.isValidConfig(asvConfig, obstacles)) {
-//                return false;
-//            }
-//        }
+        for (ASVConfig asvConfig : segment) {
+            if (!tester.isValidConfig(asvConfig, obstacles)) {
+                return false;
+            }
+        }
         return true;
     }
 
