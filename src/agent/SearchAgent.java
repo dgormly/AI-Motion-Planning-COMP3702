@@ -91,32 +91,26 @@ public class SearchAgent {
     }
 
 
-
-
+    /**
+     *
+     * @param cfg
+     * @param vertices
+     * @return
+     */
     public ASVConfig getClosestASV(ASVConfig cfg, List<ASVConfig> vertices) {
         ASVConfig closestASV = null;
-        Point2D point = cfg.getPosition(0);
         double dist = 100;
         for (ASVConfig c : vertices) {
-            Point2D p = c.getPosition(0);
-            if (p.equals(point)) {
+            if (c.equals(cfg)) {
                 continue;
             }
-            double d = point.distance(p);
-            Line2D line = new Line2D.Double();
-            line.setLine(point, p);
-            boolean intersect = false;
-            for (Obstacle obstacle : obstacles) {
-                if (line.intersects(obstacle.getRect())) {
-                    intersect = true;
+
+            if (isValidSegment(ASVConfig.createSegment(cfg, c))) {
+                double d = cfg.totalDistance(c);
+                if (d < dist) {
+                    closestASV = c;
+                    dist = d;
                 }
-            }
-            if (intersect) {
-                continue;
-            }
-            if (d < dist) {
-                closestASV = c;
-                dist = d;
             }
         }
         return closestASV;
