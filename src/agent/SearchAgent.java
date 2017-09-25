@@ -205,32 +205,6 @@ public class SearchAgent {
 
 
     /**
-     * Checks if a given point collides with any obstacles.
-     *
-     * @param point
-     *      checks if a point is in a valid position.
-     * @return True if point is in an obstacle.
-     */
-    private static boolean checkValidPoint(Point2D point, List<Obstacle> obstacles) {
-        double x = point.getX();
-        double y = point.getY();
-        for (Obstacle o: obstacles) {
-            double ox = o.getRect().getX();
-            double oy = o.getRect().getY();
-            double width = o.getRect().getWidth();
-            double height = o.getRect().getHeight();
-
-            if ((x > ox && x < ox + width) &&
-                    (y > oy && y < oy + height)) {
-                return false;
-            }
-
-        }
-        return true;
-    }
-
-
-    /**
      * Checks if a segment is valid between two configurations.
      *
      * @param segment
@@ -251,7 +225,7 @@ public class SearchAgent {
 
 
     /**
-     * Returns the soltion path.
+     * Returns the soultion path.
      *
      * @param nodes
      *      List of nodes to be converted into ASVConfigs.
@@ -268,9 +242,23 @@ public class SearchAgent {
         }
 
         // Create segments
-        for (int j = 0; j < path.size() - 1; j++) {
+        List<ASVConfig> newPath = new ArrayList<>();
+        newPath.add(path.get(0));
+        for (int j = 1; j < path.size(); j++) {
             ASVConfig c = path.get(j);
-            ASVConfig cc = path.get(j + 1);
+            ASVConfig cc = newPath.get(newPath.size() - 1);
+            List<ASVConfig> segment = ASVConfig.createSegment(c, cc);
+
+            if (!isValidSegment(segment)) {
+                newPath.add(path.get(j - 1));
+            }
+        }
+        newPath.add(path.get(path.size() - 1));
+
+        for (int j = 0; j < newPath.size() - 1; j++) {
+            ASVConfig c = newPath.get(j);
+            ASVConfig cc = newPath.get(j + 1);
+
             List<ASVConfig> segment = ASVConfig.createSegment(c, cc);
             finalPath.addAll(segment);
         }
@@ -291,12 +279,9 @@ public class SearchAgent {
         List<Node> path;
         List<ASVConfig> vertices = new ArrayList<>();
 
-        int count = 5;
-
         do {
-            vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), count));
+            vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), 500));
             path = this.findPath(vertices, initialConfig, goalConfig);
-            count += count;
         } while (path == null);
 
         problemSpec.setPath(getSolution(path));
