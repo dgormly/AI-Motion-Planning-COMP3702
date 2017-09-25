@@ -9,22 +9,19 @@ import java.util.List;
 public class Node implements Comparable<Node> {
     public Node parent;
     public List<Node> children;
-    public Point2D point;
     public double pathCost;
     public ASVConfig config;
 
-    public Node(Node parent, Point2D point, double cost, ASVConfig config) {
+    public Node(Node parent, double cost, ASVConfig config) {
         this.parent = parent;
         this.children = new ArrayList<>();
-        this.point = point;
         this.pathCost = cost;
         this.config = config;
     }
 
-    public Node(Node parent, Point2D point, ASVConfig config) {
+    public Node(Node parent, ASVConfig config) {
         this.parent = parent;
         this.children = new ArrayList<>();
-        this.point = point;
         this.config = config;
     }
 

@@ -574,7 +574,7 @@ public class Tester {
 	}
 
 	public boolean isValidConfig(ASVConfig cfg, List<Obstacle> obstacles) {
-		return !hasCollision(cfg, obstacles) && hasEnoughArea(cfg) && isConvex(cfg);
+		return !hasCollision(cfg, obstacles) && hasEnoughArea(cfg) && isConvex(cfg);// && hasValidBoomLengths(cfg);
 	}
 
 	/**

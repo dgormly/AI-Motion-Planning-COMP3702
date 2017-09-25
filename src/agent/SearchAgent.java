@@ -8,6 +8,7 @@ import tester.Tester;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
@@ -45,7 +46,7 @@ public class SearchAgent {
      * @param vertices
      * @return
      */
-    public List<List<Point2D>> constructStateGraph(List<Point2D> vertices) {
+    public Set<Set<ASVConfig>> constructStateGraph(List<ASVConfig> vertices) {
         /*
         Loop
             Sample a configuration q uniformly at random from the state space. - Insert sampling stategy.
@@ -57,31 +58,28 @@ public class SearchAgent {
          */
 
         int size = vertices.size();
-        Set<Set<Point2D>> edges = new HashSet<>();
+        Set<Set<ASVConfig>> edges = new HashSet<>();
         adjacencyGraph = new int[size][size];
 
-        for (Point2D p : vertices) {
-            List<Point2D> points = getPointsInRange(0.05, p, vertices);
-            int pos = vertices.indexOf(p);
-            for (Point2D p2 : points) {
-                int pos2 = vertices.indexOf(p2);
+        for (ASVConfig c : vertices) {
+            // Create Matrix
+            List<ASVConfig> ASVsInRange = getASVsInRange(0.2, c, vertices);
+            int pos = vertices.indexOf(c);
+            for (ASVConfig d : ASVsInRange) {
+                int pos2 = vertices.indexOf(d);
                 adjacencyGraph[pos][pos2] = 1;
             }
+
             // Create graph
             for (int i = 0; i < size; i++) {
                 for (int n = 0; n <= i; n++) {
                     if (adjacencyGraph[i][n] == 1) {
-                        Line2D line = new Line2D.Double(vertices.get(i), vertices.get(n));
-                        boolean clash = false;
-                        for (Obstacle o : obstacles) {
-                            if (line.intersects(o.getRect())) {
-                                clash = true;
-                            }
-                        }
-                        if (clash) {
+                        List<ASVConfig> segment = ASVConfig.createSegment(vertices.get(i), vertices.get(n));
+
+                        if (!isValidSegment(segment)) {
                             continue;
                         }
-                        Set<Point2D> list = new HashSet<>();
+                        Set<ASVConfig> list = new HashSet<>();
                         list.add(vertices.get(i));
                         list.add(vertices.get(n));
                         edges.add(list);
@@ -89,22 +87,18 @@ public class SearchAgent {
                 }
             }
         }
-        List<List<Point2D>> edgeList = new ArrayList<>();
-        for (Set<Point2D> e : edges) {
-            List<Point2D> l = new ArrayList<>();
-            l.addAll(e);
-            edgeList.add(l);
-        }
-        return edgeList;
+        return edges;
     }
 
 
 
 
-    public Point2D getClosestPoint(Point2D point, List<Point2D> vertices) {
-        Point2D closestPoint = new Point2D.Double();
+    public ASVConfig getClosestASV(ASVConfig cfg, List<ASVConfig> vertices) {
+        ASVConfig closestASV = null;
+        Point2D point = cfg.getPosition(0);
         double dist = 100;
-        for (Point2D p : vertices) {
+        for (ASVConfig c : vertices) {
+            Point2D p = c.getPosition(0);
             if (p.equals(point)) {
                 continue;
             }
@@ -121,11 +115,11 @@ public class SearchAgent {
                 continue;
             }
             if (d < dist) {
-                closestPoint = p;
+                closestASV = c;
                 dist = d;
             }
         }
-        return closestPoint;
+        return closestASV;
     }
 
 
@@ -135,23 +129,26 @@ public class SearchAgent {
      *
      * @param distSize
      *      Distance to search.
-     * @param point
-     *      Vertice to scan around.
      * @param vertices
      *      Vertices to scan through.
      * @return
      */
-    public List<Point2D> getPointsInRange(double distSize, Point2D point, List<Point2D> vertices) {
-        List<Point2D> returnList = new ArrayList<>();
-        for (Point2D p : vertices) {
+    public List<ASVConfig> getASVsInRange(double distSize, ASVConfig cfg, List<ASVConfig> vertices) {
+        List<ASVConfig> returnList = new ArrayList<>();
+        Point2D point = cfg.getPosition(0);
 
-            if (point.equals(p)) {
+        for (ASVConfig c : vertices) {
+            Point2D pp = c.getPosition(0);
+            if (point.equals(pp)) {
                 continue;
             }
-            if (point.distance(p) < distSize) {
-                returnList.add(p);
-            }
+            if (point.distance(pp) < distSize) {
+                List<ASVConfig> segment = ASVConfig.createSegment(cfg, c);
+                if (isValidSegment(segment)) {
+                    returnList.add(c);
+                }
 
+            }
         }
         return returnList;
     }
@@ -168,7 +165,7 @@ public class SearchAgent {
      *      the end configuration.
      * @return List of Nodes containing the path.
      */
-    public List<Node> findPath(List<Point2D> vertices, ASVConfig start, ASVConfig goal) {
+    public List<Node> findPath(List<ASVConfig> vertices, ASVConfig start, ASVConfig goal) {
         /*
         While runtime < timeLimit AND path is not found repeat
         Sample a configuration q with a suitable sampling strategy. if q is collision-free then
@@ -187,30 +184,35 @@ public class SearchAgent {
          */
 
 
-        Point2D closestStartPoint = getClosestPoint(start.getPosition(0), vertices);
-        Point2D closestGoalPoint = getClosestPoint(goal.getPosition(0), vertices);
+        ASVConfig closestStartPoint = getClosestASV(start, vertices);
+        ASVConfig closestGoalPoint = getClosestASV(goal, vertices);
 
-        // Setup Search
-        Node parent = new Node(null, start.getPosition(0), 0, start);
-        Node child = new Node(parent, closestStartPoint, closestStartPoint.distance(closestGoalPoint), start);
-        Set<Point2D> historySet = new HashSet<>();
+        /* Setup Search */
+        // First node is start config, child is closest cfg.
+        Node parent = new Node(null,  0, start);
+        Node child = new Node(parent, closestStartPoint.totalDistance(closestGoalPoint), closestStartPoint);
+
+        Set<ASVConfig> historySet = new HashSet<>();
         PriorityQueue<Node> container = new PriorityQueue<>();
-        container.add(parent);
         container.add(child);
 
         // Begin A* Star search.
         while (true) {
+            if (container.size() == 0) {
+                return null;
+            }
             Node current = container.poll();
-            if (historySet.contains(current.point)) {
+            if (historySet.contains(current.config)) {
                 continue;
             }
-            historySet.add(current.point);
-            List<Point2D> children = getPointsInRange(0.05, current.point, vertices);
-            for (Point2D p : children) {
-                if (p.equals(closestGoalPoint)) {
+            historySet.add(current.config);
+            List<ASVConfig> children = getASVsInRange(0.2, current.config, vertices);
+
+            for (ASVConfig c : children) {
+                if (c.equals(closestGoalPoint)) {
                     /* Found goal config. */
                     List<Node> path = new ArrayList<>();
-                    Node finalNode = new Node(current, p, p.distance(current.point), goal);
+                    Node finalNode = new Node(current, c.totalDistance(current.config), goal);
                     path.add(finalNode);
                     while(current.parent != null) {
                         path.add(current);
@@ -219,11 +221,9 @@ public class SearchAgent {
                     path.add(current);
                     return path;
                 }
-                double cost = p.distance(current.point) + p.distance(closestGoalPoint);
-//                ASVConfig newConfig = new ASVConfig(current.config);
-//                newConfig.move(p);
-//                Node n = new Node(current, p, cost, newConfig);
-//                container.add(n);
+                double cost = c.totalDistance(current.config) + c.totalDistance(closestGoalPoint);
+                Node n = new Node(current, cost, c);
+                container.add(n);
             }
         }
     }
@@ -261,17 +261,23 @@ public class SearchAgent {
      * @param rect
      * @return
      */
-    public List<Point2D> sampleStateGraph(int sampleSize, Rectangle2D rect) {
-        List<Point2D> sampleList = new ArrayList();
-        Tester tester = new Tester();
+    public List<ASVConfig> sampleStateGraph(int numASVs,int sampleSize, Rectangle2D rect) {
+        List<ASVConfig> sampleList = new ArrayList();
         for (int i = 0; i < sampleSize; i++) {
             Point2D point;
+
             do {
                 double xPoint = Math.abs(Math.random() * rect.getWidth() + rect.getX());
                 double yPoint = Math.abs(Math.random() * rect.getHeight() + rect.getY());
                 point = new Point2D.Double(xPoint, yPoint);
             } while (!checkValidPoint(point, this.obstacles));
-            sampleList.add(point);
+
+            List<ASVConfig> configs = ASVConfig.sampleConfigurations(point, numASVs, 1, obstacles);
+            if (configs.size() == 0) {
+                --i;
+                continue;
+            }
+            sampleList.addAll(configs);
         }
         return sampleList;
     }
@@ -280,25 +286,53 @@ public class SearchAgent {
     /**
      * Checks if a segment is valid between two configurations.
      *
-     * @param cfg1
-     * @param cfg2
+     * @param segment
+     *      configuration path between one point and another.
+     *
      * @return True if all configurations are valid in the segment.
      */
-    public boolean isValidSegment(ASVConfig cfg1, ASVConfig cfg2) {
-        List<ASVConfig> segemnt = ASVConfig.transform(cfg1, cfg2);
-        for (ASVConfig asvConfig : segemnt) {
-            if (!tester.isValidConfig(asvConfig, obstacles)) {
-                return false;
-            }
-        }
+    public boolean isValidSegment(List<ASVConfig> segment) {
+//        for (ASVConfig asvConfig : segment) {
+//            if (!tester.isValidConfig(asvConfig, obstacles)) {
+//                return false;
+//            }
+//        }
         return true;
     }
 
-    public void run() {
+
+    public List<ASVConfig> getSolution(List<Node> nodes) {
+        List<ASVConfig> path = new ArrayList<>();
+        List<ASVConfig> finalPath = new ArrayList<>();
+        for (int i = nodes.size() - 1; i >= 0; i--) {
+            path.add(nodes.get(i).config);
+        }
+
+        // Create segments
+        for (int j = 0; j < path.size() - 1; j++) {
+            ASVConfig c = path.get(j);
+            ASVConfig cc = path.get(j + 1);
+            List<ASVConfig> segment = ASVConfig.createSegment(c, cc);
+            finalPath.addAll(segment);
+        }
+        return finalPath;
+    }
+
+    public void run() throws IOException {
         ASVConfig initialConfig = problemSpec.getInitialState();
         ASVConfig goalConfig = problemSpec.getGoalState();
-        System.out.println(goalConfig.getAngles());
-        List<ASVConfig> path = ASVConfig.transform(initialConfig, goalConfig);
-        problemSpec.setPath(path);
+
+        List<Node> path;
+        List<ASVConfig> vertices = new ArrayList<>();
+
+        do {
+            vertices.addAll(sampleStateGraph(initialConfig.getASVCount(), 10, new Rectangle2D.Double(0, 0, 1, 1)));
+            path = this.findPath(vertices, initialConfig, goalConfig);
+        } while (path == null);
+
+        problemSpec.setPath(getSolution(path));
+        problemSpec.saveSolution("testing.txt");
+
+        System.out.println("Solution Found!");
     }
 }

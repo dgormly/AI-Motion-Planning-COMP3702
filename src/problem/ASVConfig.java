@@ -249,14 +249,15 @@ public class ASVConfig {
 		Tester tester = new Tester();
 
 		// Begins generating sample configurations.
-		while (validConfigs.size() < numberOfConfigs) {
+		int counter = 0;
+		while (validConfigs.size() < numberOfConfigs && counter++ < 100) {
 			// Generate random numbers.
 			double range = 180 + (numASV - 3) * 180;
-			double[] rAngles = new double[numASV];
+			double[] rAngles = new double[numASV - 1];
 
 			for (int i = 1; i < numASV; i++) {
-				double initialAngleDegrees = Math.random() * range * 2 - range;
-				rAngles[i] = normaliseAngle(initialAngleDegrees);
+				double initialAngleDegrees = Math.random() * range - range;
+				rAngles[i - 1] = normaliseAngle(initialAngleDegrees);
 				range -= initialAngleDegrees;
 			}
 
@@ -297,7 +298,7 @@ public class ASVConfig {
 	 * @param goalConfig
 	 * @return Segment between two configurations.
 	 */
-	public static List<ASVConfig> transform(ASVConfig initialCfg, ASVConfig goalConfig) {
+	public static List<ASVConfig> createSegment(ASVConfig initialCfg, ASVConfig goalConfig) {
 		List<ASVConfig> segment = new ArrayList<>();
 
 		/* Setup rate of change for X and Y */

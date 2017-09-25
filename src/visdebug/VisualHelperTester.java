@@ -1,11 +1,11 @@
 package visdebug;
 
+import agent.Node;
 import agent.SearchAgent;
 import problem.ASVConfig;
 import problem.Obstacle;
 import problem.ProblemSpec;
-import tester.Tester;
-
+import sun.management.Agent;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,29 +20,33 @@ public class VisualHelperTester {
 		ProblemSpec problemSpec = new ProblemSpec();
 		problemSpec.assumeDirectSolution();
 		try {
-			problemSpec.loadProblem("testcases/7ASV-easy.txt");
+			problemSpec.loadProblem("testcases/3ASV-easy.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		VisualHelper vh = new VisualHelper();
 		SearchAgent agent = new SearchAgent(problemSpec);
+		VisualHelper vh = new VisualHelper();
 		ASVConfig initialConfig = problemSpec.getInitialState();
 		ASVConfig goalConfig = problemSpec.getGoalState();
-		Tester tester = new Tester();
-		List<ASVConfig> asvPath = new ArrayList<>();
-		List<Obstacle> obstacleList = problemSpec.getObstacles();
-		List<Rectangle2D> rectList = new ArrayList<>();
+		List<Rectangle2D> rectangles = new ArrayList<>();
+		for (Obstacle obstacle : problemSpec.getObstacles()) {
+			rectangles.add(obstacle.getRect());
+		}
+		vh.addRectangles(rectangles);
 
+		List<Node> path;
+		List<ASVConfig> vertices = new ArrayList<>();
 
-	vh.addLinkedPoints(goalConfig.getASVPositions());
-	vh.repaint();
-	vh.waitKey();
-		List<ASVConfig> path = ASVConfig.transform(initialConfig, goalConfig);
+		do {
+			vertices.addAll(agent.sampleStateGraph(initialConfig.getASVCount(), 10, new Rectangle2D.Double(0, 0, 1, 1)));
+			path = agent.findPath(vertices, initialConfig, goalConfig);
+			for (ASVConfig vertex : vertices) {
+				vh.addLinkedPoints(vertex.getASVPositions());
+			}
+			vh.repaint();
+			vh.waitKey();
 
-		vh.addLinkedPoints(goalConfig.getASVPositions());
-		double[] results = goalConfig.getAngles();
+		} while (path == null);
 		vh.repaint();
-
 	}
 }
