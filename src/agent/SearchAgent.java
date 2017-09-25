@@ -297,8 +297,7 @@ public class SearchAgent {
     public void run() {
         ASVConfig initialConfig = problemSpec.getInitialState();
         ASVConfig goalConfig = problemSpec.getGoalState();
-        double[] angles = {0, 90};
-        goalConfig.setAngles(angles);
+        System.out.println(goalConfig.getAngles());
         List<ASVConfig> path = ASVConfig.transform(initialConfig, goalConfig);
         problemSpec.setPath(path);
     }

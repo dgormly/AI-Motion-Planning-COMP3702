@@ -16,6 +16,7 @@ import java.awt.geom.Point2D;
 public class ASVConfig {
 	/** The position of each ASV */
 	private List<Point2D> asvPositions = new ArrayList<Point2D>();
+	private double[] angles;
 
 	/**
 	 * Constructor. Takes an array of 2n x and y coordinates, where n is the
@@ -29,8 +30,16 @@ public class ASVConfig {
 			asvPositions.add(new Point2D.Double(coords[i * 2],
 					coords[i * 2 + 1]));
 		}
+		getAngles();
 	}
 
+
+	/**
+	 *
+	 * @param anchor
+	 * @param angles
+	 * @param cfg
+	 */
 	public ASVConfig(Point2D anchor, double[] angles, ASVConfig cfg) {
 		asvPositions = cfg.getASVPositions();
 		asvPositions.set(0, anchor);
@@ -53,6 +62,7 @@ public class ASVConfig {
 					.add(new Point2D.Double(s.nextDouble(), s.nextDouble()));
 		}
 		s.close();
+		getAngles();
 	}
 
 	/**
@@ -161,6 +171,25 @@ public class ASVConfig {
 	}
 
 
+
+	/**
+	 * Normalises an angle to the range (-pi, pi]
+	 *
+	 * @param angle
+	 *            the angle to normalise.
+	 * @return the normalised angle.
+	 */
+	public static double normaliseAngle(double angle) {
+		while (angle <= -Math.PI) {
+			angle += 2 * Math.PI;
+		}
+		while (angle > Math.PI) {
+			angle -= 2 * Math.PI;
+		}
+		return angle;
+	}
+
+
 	/**
 	 * Get all the angles from the config.
 	 *
@@ -177,22 +206,26 @@ public class ASVConfig {
 			if (i != 0) {
 				angle -= angles[i - 1];
 			}
-			angles[i] = Math.toDegrees(angle);
+			angle = normaliseAngle(angle);
+			angles[i] = angle;
 		}
+		this.angles = angles;
 		return angles;
 	}
 
+
+
 	public void setAngles(double[] angles) {
+		double currentAngle = 0;
 		for (int i = 0; i < angles.length; i++) {
-			double currentAngle = 0;
 			currentAngle += angles[i];
-			currentAngle = Math.toRadians(currentAngle);
 			Point2D a = this.getPosition(i);
 			Point2D b = this.getPosition(i + 1);
 			double newX = 0.05 * Math.cos(currentAngle) + a.getX();
 			double newY = 0.05 * Math.sin(currentAngle) + a.getY();
 			b.setLocation(newX, newY);
 		}
+		this.angles = angles;
 	}
 
 
@@ -264,17 +297,34 @@ public class ASVConfig {
 
 		Point2D p1 = initialCfg.getPosition(0);
 		Point2D p2 = goalConfig.getPosition(0);
-		double cx = (p2.getX() - p1.getX()) / iterations;
-		double cy = (p2.getY() - p1.getX()) / iterations;
 
-		for (int j = 0; j < iterations; j++) {
-			double[] tempAngle = new double[a.length];
-			for (int i = 0; i < a.length - 1; i++) {
-				tempAngle[i] = (j*((b[i] - a[i]) / iterations)) + a[i];
-			}
+		// Get difference in angle.
+		double[] dAngle = new double[a.length];
+		for (int i = 0; i < a.length; i++) {
+			dAngle[i] = normaliseAngle(b[i] - a[i]);
+		}
+
+		// Get rate of change
+		double[] cAngle = new double[a.length];
+		for (int i = 0; i < a.length; i++) {
+			cAngle[i] = dAngle[i] / iterations;
+		}
+
+
+		// Get anchor point.
+		double pointDistanceX = p2.getX() - p1.getX();
+		double pointDistanceY = p2.getY() - p1.getY();
+
+
+		segment.add(initialCfg);
+		for (int j = 1; j < iterations; j++) {
 			/* Get new anchor point. */
-			Point2D anchor = new Point2D.Double(j * cx + p1.getX(), j * cy + p1.getY());
-			ASVConfig tempCfg = new ASVConfig(anchor, tempAngle, initialCfg);
+			double[] tempAngle = new double[cAngle.length];
+			for (int i = 0; i < cAngle.length; i++) {
+				tempAngle[i] = j * cAngle[i] + initialCfg.getAngles()[i];
+			}
+			Point2D anchor = new Point2D.Double(j * (pointDistanceX / iterations) + p1.getX(), j * (pointDistanceY / iterations) + p1.getY());
+			ASVConfig tempCfg = new ASVConfig(anchor, tempAngle, segment.get(j - 1));
 			segment.add(tempCfg);
 		}
 
