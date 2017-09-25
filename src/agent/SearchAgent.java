@@ -16,83 +16,76 @@ public class SearchAgent {
 
     private ProblemSpec problemSpec;
     private List<Obstacle> obstacles;
-    public List<Obstacle> expandedList;
-    public Map<Point2D, List<Point2D>> graph;
+
     public List<Point2D> sampleList;
-    public int[][] adjacencyGraph;
     public Tester tester = new Tester();
-    private Sample sampler;
+    private Sampler sampler;
 
 
     public SearchAgent(ProblemSpec problem) {
         problemSpec = problem;
         tester.ps = problemSpec;
         obstacles = problemSpec.getObstacles();
-        expandedList = new ArrayList<>();
-        for (Obstacle obstacle : obstacles) {
-            Obstacle o = new Obstacle(tester.grow(obstacle.getRect(), 0.01));
-            expandedList.add(o);
-        }
-        graph = new HashMap<>();
         sampleList = new ArrayList<>();
-        sampler = new Sample(obstacles, new Rectangle2D.Double(0,0,1,1));
+        sampler = new Sampler(obstacles, new Rectangle2D.Double(0,0,1,1));
     }
 
 
+//    /**
+//     * Needs completely rewritting.
+//     *
+//     * Creates a graph from the given List.
+//     *
+//     * @param vertices
+//     * @return
+//     */
+//    public Set<Set<ASVConfig>> constructStateGraph(List<ASVConfig> vertices) {
+//        /*
+//        Loop
+//            Sample a configuration q uniformly at random from the state space. - Insert sampling stategy.
+//            if q is not in collision.
+//                Add q as a vertice to the state graph.
+//                For all q' within D distance from q in state graph.
+//                    If the line segment  (in C space) between q and q’ is not in-collision,
+//                     add an edge qq’ to the state graph.
+//         */
+//
+//        int size = vertices.size();
+//        Set<Set<ASVConfig>> edges = new HashSet<>();
+//        adjacencyGraph = new int[size][size];
+//
+//        for (ASVConfig c : vertices) {
+//            // Create Matrix
+//            List<ASVConfig> ASVsInRange = getASVsInRange(0.2, c, vertices);
+//            int pos = vertices.indexOf(c);
+//            for (ASVConfig d : ASVsInRange) {
+//                int pos2 = vertices.indexOf(d);
+//                adjacencyGraph[pos][pos2] = 1;
+//            }
+//
+//            // Create graph
+//            for (int i = 0; i < size; i++) {
+//                for (int n = 0; n <= i; n++) {
+//                    if (adjacencyGraph[i][n] == 1) {
+//                        List<ASVConfig> segment = ASVConfig.createSegment(vertices.get(i), vertices.get(n));
+//
+//                        if (!isValidSegment(segment)) {
+//                            continue;
+//                        }
+//                        Set<ASVConfig> list = new HashSet<>();
+//                        list.add(vertices.get(i));
+//                        list.add(vertices.get(n));
+//                        edges.add(list);
+//                    }
+//                }
+//            }
+//        }
+//        return edges;
+//    }
+
+
     /**
-     * Needs completely rewritting.
-     *
-     * Creates a graph from the given List.
-     *
-     * @param vertices
-     * @return
-     */
-    public Set<Set<ASVConfig>> constructStateGraph(List<ASVConfig> vertices) {
-        /*
-        Loop
-            Sample a configuration q uniformly at random from the state space. - Insert sampling stategy.
-            if q is not in collision.
-                Add q as a vertice to the state graph.
-                For all q' within D distance from q in state graph.
-                    If the line segment  (in C space) between q and q’ is not in-collision,
-                     add an edge qq’ to the state graph.
-         */
-
-        int size = vertices.size();
-        Set<Set<ASVConfig>> edges = new HashSet<>();
-        adjacencyGraph = new int[size][size];
-
-        for (ASVConfig c : vertices) {
-            // Create Matrix
-            List<ASVConfig> ASVsInRange = getASVsInRange(0.2, c, vertices);
-            int pos = vertices.indexOf(c);
-            for (ASVConfig d : ASVsInRange) {
-                int pos2 = vertices.indexOf(d);
-                adjacencyGraph[pos][pos2] = 1;
-            }
-
-            // Create graph
-            for (int i = 0; i < size; i++) {
-                for (int n = 0; n <= i; n++) {
-                    if (adjacencyGraph[i][n] == 1) {
-                        List<ASVConfig> segment = ASVConfig.createSegment(vertices.get(i), vertices.get(n));
-
-                        if (!isValidSegment(segment)) {
-                            continue;
-                        }
-                        Set<ASVConfig> list = new HashSet<>();
-                        list.add(vertices.get(i));
-                        list.add(vertices.get(n));
-                        edges.add(list);
-                    }
-                }
-            }
-        }
-        return edges;
-    }
-
-
-    /**
+     * Returns the closes ASV with a valid segment.
      *
      * @param cfg
      * @param vertices
@@ -116,7 +109,6 @@ public class SearchAgent {
         }
         return closestASV;
     }
-
 
 
     /**
@@ -161,31 +153,8 @@ public class SearchAgent {
      * @return List of Nodes containing the path.
      */
     public List<Node> findPath(List<ASVConfig> vertices, ASVConfig start, ASVConfig goal) {
-        /*
-        While runtime < timeLimit AND path is not found repeat
-        Sample a configuration q with a suitable sampling strategy. if q is collision-free then
-        Add q to the graph G.
-        Connect q to existing vertices in G using valid edges. until n new vertices have been added to G.
-                Search G for a path.
-        */
-
-        /*
-        Given an initial & a goal configurations,
-        Find the vertex qi nearest to the initial configuration,
-            where the straight line segment between initial configuration & qi is collision free.
-        Find the vertex qg nearest to the goal configuration,
-            where the straight line segment between goal configuration & qg is collision free.
-        Find a path from qi to qg using the search algorithms we have discussed (blind/informed search).
-         */
-
 
         // Sample around starting areas.
-        Point2D p = start.getPosition(0);
-        Point2D q = goal.getPosition(0);
-
-        Rectangle2D rs = new Rectangle2D.Double(p.getX() - 20, p.getY() - 20, p.getX() + 20, p.getY() + 20);
-        Rectangle2D rg = new Rectangle2D.Double(q.getX() - 20, q.getY() - 20, q.getX() + 20, q.getY() + 20);
-
         ASVConfig closestStartPoint = getClosestASV(start, vertices);
         ASVConfig closestGoalPoint = getClosestASV(goal, vertices);
 
@@ -270,18 +239,30 @@ public class SearchAgent {
      * @return True if all configurations are valid in the segment.
      */
     public boolean isValidSegment(List<ASVConfig> segment) {
+
         for (ASVConfig asvConfig : segment) {
             if (!tester.isValidConfig(asvConfig, obstacles)) {
                 return false;
             }
         }
+
         return true;
     }
 
 
+    /**
+     * Returns the soltion path.
+     *
+     * @param nodes
+     *      List of nodes to be converted into ASVConfigs.
+     *
+     * @return ASV Configuration path.
+     */
     public List<ASVConfig> getSolution(List<Node> nodes) {
+
         List<ASVConfig> path = new ArrayList<>();
         List<ASVConfig> finalPath = new ArrayList<>();
+
         for (int i = nodes.size() - 1; i >= 0; i--) {
             path.add(nodes.get(i).config);
         }
@@ -296,7 +277,14 @@ public class SearchAgent {
         return finalPath;
     }
 
+
+    /**
+     * Controls the AI search.
+     *
+     * @throws IOException
+     */
     public void run() throws IOException {
+
         ASVConfig initialConfig = problemSpec.getInitialState();
         ASVConfig goalConfig = problemSpec.getGoalState();
 
@@ -304,6 +292,7 @@ public class SearchAgent {
         List<ASVConfig> vertices = new ArrayList<>();
 
         int count = 5;
+
         do {
             vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), count));
             path = this.findPath(vertices, initialConfig, goalConfig);

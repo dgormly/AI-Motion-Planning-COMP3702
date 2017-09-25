@@ -9,7 +9,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Sample {
+public class Sampler {
     /*
     Sample near obstacles
 
@@ -48,7 +48,7 @@ public class Sample {
     private List<Obstacle> obstacles;
     private Rectangle2D sampleArea;
 
-    public Sample(List<Obstacle> obstacles, Rectangle2D sampleArea) {
+    public Sampler(List<Obstacle> obstacles, Rectangle2D sampleArea) {
         this.obstacles = obstacles;
         this.sampleArea = sampleArea;
 
@@ -147,7 +147,8 @@ public class Sample {
 
 
                 if (!checkValidPoint(p) && !checkValidPoint(q)) {
-                    Point2D m = new Point2D.Double(((q.getX() - p.getX()) / 2) + p.getX(), ((q.getY() - p.getY()) / 2) + p.getY());
+                    Point2D m = new Point2D.Double(((q.getX() - p.getX()) / 2) + p.getX(),
+                            ((q.getY() - p.getY()) / 2) + p.getY());
                     if (checkValidPoint(m)) {
                         sampleList.addAll(ASVConfig.sampleConfigurations(q, temp.getASVCount(), 1, obstacles));
                     }
