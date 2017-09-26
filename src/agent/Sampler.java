@@ -65,7 +65,7 @@ public class Sampler {
                 point = new Point2D.Double(xPoint, yPoint);
             } while (!checkValidPoint(point));
 
-            List<ASVConfig> configs = ASVConfig.sampleConfigurations(point, numASVs, 1, obstacles);
+            List<ASVConfig> configs = ASVConfig.sampleConfigurations(point, numASVs, 5, obstacles);
             if (configs.size() == 0) {
                 --i;
                 continue;

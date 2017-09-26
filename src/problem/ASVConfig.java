@@ -254,10 +254,10 @@ public class ASVConfig {
 		while (validConfigs.size() < numberOfConfigs) {
 			// Generate random numbers.
 			double[] rAngles = new double[numASV - 1];
-			double range = 180 + 180 * (numASV - 3);
+			double range = 180 * (numASV - 3);
 			for (int i = 1; i < numASV; i++) {
-				double initialAngleDegrees = i == 1 ? Math.random() * 360 : Math.random() * range;
-				range = i == 1 ? initialAngleDegrees : range - initialAngleDegrees;
+				double initialAngleDegrees = i == 1 ? Math.random() * 360 : Math.random() * 180;
+				//range = i == 1 ? initialAngleDegrees : range - initialAngleDegrees;
 				initialAngleDegrees = normaliseAngle(Math.toRadians(initialAngleDegrees));
 				rAngles[i - 1] = initialAngleDegrees;
 			}

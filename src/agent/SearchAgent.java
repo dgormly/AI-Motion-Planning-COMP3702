@@ -17,7 +17,7 @@ public class SearchAgent {
     private final double SAMPLE_STEP_SIZE = 0.001;
     private final double SOLUTION_STEP_SIZE = 0.001;
     private final double SEARCH_RANGE = 0.2;
-    private final int SAMPLE_SIZE = 500;
+    private final int SAMPLE_SIZE = 100;
 
     private ProblemSpec problemSpec;
     private List<Obstacle> obstacles;
@@ -164,10 +164,6 @@ public class SearchAgent {
         vertices.add(goal);
         ASVConfig closestStartPoint = start;
         ASVConfig closestGoalPoint = goal;
-
-        if (closestGoalPoint == null || closestStartPoint == null) {
-            return null;
-        }
 
         /* Setup Search */
         // First node is start config, child is closest cfg.
