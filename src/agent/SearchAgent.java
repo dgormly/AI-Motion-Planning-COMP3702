@@ -280,7 +280,8 @@ public class SearchAgent {
         List<ASVConfig> vertices = new ArrayList<>();
 
         do {
-            vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), 500));
+            vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), 100));
+            vertices.addAll(sampler.sampleNearObstacles(initialConfig, 100, 0.1));
             path = this.findPath(vertices, initialConfig, goalConfig);
         } while (path == null);
 
