@@ -125,65 +125,65 @@ public class Sampler {
      */
     public List<ASVConfig> sampleInsidePassage(ASVConfig temp,int sampleSize, double diam) {
         List<ASVConfig> sampleList = new ArrayList();
-//        for (int i = 0; i < sampleSize; i++) {
-//            Point2D p;
-//            Point2D q;
-//
-//
-//            // Get first point.
-//            while (sampleList.size() < sampleSize) {
-//                double xPoint = Math.abs(Math.random() * sampleArea.getWidth() + sampleArea.getX());
-//                double yPoint = Math.abs(Math.random() * sampleArea.getHeight() + sampleArea.getY());
-//                p = new Point2D.Double(xPoint, yPoint);
-//                if (checkValidPoint(p)) {
-//                    continue;
-//                }
-//
-//                // Sample in given radius.
-//                Ellipse2D circle = new Ellipse2D.Double(p.getX() - (diam / 2), p.getY() - (diam / 2), diam, diam);
-//                    double xP2 = Math.abs(Math.random() * circle.getWidth() + circle.getX());
-//                    double yP2 = Math.abs(Math.random() * circle.getHeight() + circle.getY());
-//                    q = new Point2D.Double(xP2, yP2);
-//
-//
-//                if (!checkValidPoint(p) && !checkValidPoint(q)) {
-//                    Point2D m = new Point2D.Double(((q.getX() - p.getX()) / 2) + p.getX(),
-//                            ((q.getY() - p.getY()) / 2) + p.getY());
-//                    if (checkValidPoint(m)) {
-//                        sampleList.addAll(ASVConfig.sampleConfigurations(q, temp.getASVCount(), 1, obstacles));
-//                    }
-//                }
-//            }
-//        }
+        for (int i = 0; i < sampleSize; i++) {
+            Point2D p;
+            Point2D q;
 
 
-        // Sample in 1 obstacle
-        // Sample in all others
-        // add cfg in the middle.
-
-        while (sampleList.size() < sampleSize) {
-            for (int i = 0; i < obstacles.size(); i++) {
-                Obstacle o = obstacles.get(i);
-                sampleArea = o.getRect();
+            // Get first point.
+            while (sampleList.size() < sampleSize) {
                 double xPoint = Math.abs(Math.random() * sampleArea.getWidth() + sampleArea.getX());
                 double yPoint = Math.abs(Math.random() * sampleArea.getHeight() + sampleArea.getY());
-                Point2D p = new Point2D.Double(xPoint, yPoint);
+                p = new Point2D.Double(xPoint, yPoint);
+                if (checkValidPoint(p)) {
+                    continue;
+                }
 
-                for (int j = 0; j < obstacles.size(); j++) {
-                    Obstacle oo = obstacles.get(j);
-                    sampleArea = oo.getRect();
-                    double xPoint2 = Math.abs(Math.random() * sampleArea.getWidth() + sampleArea.getX());
-                    double yPoint2 = Math.abs(Math.random() * sampleArea.getHeight() + sampleArea.getY());
-                    Point2D q = new Point2D.Double(xPoint2, yPoint2);
+                // Sample in given radius.
+                Ellipse2D circle = new Ellipse2D.Double(p.getX() - (diam / 2), p.getY() - (diam / 2), diam, diam);
+                    double xP2 = Math.abs(Math.random() * circle.getWidth() + circle.getX());
+                    double yP2 = Math.abs(Math.random() * circle.getHeight() + circle.getY());
+                    q = new Point2D.Double(xP2, yP2);
 
-                    Point2D m = new Point2D.Double(((q.getX() + p.getX()) / 2),
-                            ((q.getY() + p.getY()) / 2));
+
+                if (!checkValidPoint(p) && !checkValidPoint(q)) {
+                    Point2D m = new Point2D.Double(((q.getX() - p.getX()) / 2) + p.getX(),
+                            ((q.getY() - p.getY()) / 2) + p.getY());
                     if (checkValidPoint(m)) {
                         sampleList.addAll(ASVConfig.sampleConfigurations(q, temp.getASVCount(), 1, obstacles));
                     }
                 }
             }
         }
+
+
+        // Sample in 1 obstacle
+        // Sample in all others
+        // add cfg in the middle.
+
+//        while (sampleList.size() < sampleSize) {
+//            for (int i = 0; i < obstacles.size(); i++) {
+//                Obstacle o = obstacles.get(i);
+//                sampleArea = o.getRect();
+//                double xPoint = Math.abs(Math.random() * sampleArea.getWidth() + sampleArea.getX());
+//                double yPoint = Math.abs(Math.random() * sampleArea.getHeight() + sampleArea.getY());
+//                Point2D p = new Point2D.Double(xPoint, yPoint);
+//
+//                for (int j = 0; j < obstacles.size(); j++) {
+//                    Obstacle oo = obstacles.get(j);
+//                    sampleArea = oo.getRect();
+//                    double xPoint2 = Math.abs(Math.random() * sampleArea.getWidth() + sampleArea.getX());
+//                    double yPoint2 = Math.abs(Math.random() * sampleArea.getHeight() + sampleArea.getY());
+//                    Point2D q = new Point2D.Double(xPoint2, yPoint2);
+//
+//                    Point2D m = new Point2D.Double(((q.getX() + p.getX()) / 2),
+//                            ((q.getY() + p.getY()) / 2));
+//                    if (checkValidPoint(m)) {
+//                        sampleList.addAll(ASVConfig.sampleConfigurations(q, temp.getASVCount(), 1, obstacles));
+//                    }
+//                }
+//            }
+//        }
         return sampleList;
     }
 

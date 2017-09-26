@@ -14,6 +14,11 @@ import java.util.List;
 
 public class SearchAgent {
 
+    private final double SAMPLE_STEP_SIZE = 0.001;
+    private final double SOLUTION_STEP_SIZE = 0.001;
+    private final double SEARCH_RANGE = 0.2;
+    private final int SAMPLE_SIZE = 500;
+
     private ProblemSpec problemSpec;
     private List<Obstacle> obstacles;
 
@@ -99,7 +104,7 @@ public class SearchAgent {
                 continue;
             }
 
-            if (isValidSegment(ASVConfig.createSegment(cfg, c))) {
+            if (isValidSegment(ASVConfig.createSegment(cfg, c, SAMPLE_STEP_SIZE))) {
                 double d = cfg.totalDistance(c);
                 if (d < dist) {
                     closestASV = c;
@@ -130,7 +135,7 @@ public class SearchAgent {
                 continue;
             }
             if (point.distance(pp) < distSize) {
-                List<ASVConfig> segment = ASVConfig.createSegment(cfg, c);
+                List<ASVConfig> segment = ASVConfig.createSegment(cfg, c, SAMPLE_STEP_SIZE);
                 if (isValidSegment(segment)) {
                     returnList.add(c);
                 }
@@ -155,8 +160,10 @@ public class SearchAgent {
     public List<Node> findPath(List<ASVConfig> vertices, ASVConfig start, ASVConfig goal) {
 
         // Sample around starting areas.
-        ASVConfig closestStartPoint = getClosestASV(start, vertices);
-        ASVConfig closestGoalPoint = getClosestASV(goal, vertices);
+        vertices.add(start);
+        vertices.add(goal);
+        ASVConfig closestStartPoint = start;
+        ASVConfig closestGoalPoint = goal;
 
         if (closestGoalPoint == null || closestStartPoint == null) {
             return null;
@@ -171,22 +178,23 @@ public class SearchAgent {
         PriorityQueue<Node> container = new PriorityQueue<>();
         container.add(child);
 
+        Node current = new Node();
+        List<Node> path = new ArrayList<>();
         // Begin A* Star search.
         while (true) {
             if (container.size() == 0) {
                 return null;
             }
-            Node current = container.poll();
+            current = container.poll();
             if (historySet.contains(current.config)) {
                 continue;
             }
             historySet.add(current.config);
-            List<ASVConfig> children = getASVsInRange(0.3, current.config, vertices);
+            List<ASVConfig> children = getASVsInRange(SEARCH_RANGE, current.config, vertices);
 
             for (ASVConfig c : children) {
                 if (c.equals(closestGoalPoint)) {
                     /* Found goal config. */
-                    List<Node> path = new ArrayList<>();
                     Node finalNode = new Node(current, c.totalDistance(current.config), goal);
                     path.add(finalNode);
                     while(current.parent != null) {
@@ -201,6 +209,7 @@ public class SearchAgent {
                 container.add(n);
             }
         }
+
     }
 
 
@@ -247,7 +256,7 @@ public class SearchAgent {
         for (int j = 1; j < path.size(); j++) {
             ASVConfig c = path.get(j);
             ASVConfig cc = newPath.get(newPath.size() - 1);
-            List<ASVConfig> segment = ASVConfig.createSegment(c, cc);
+            List<ASVConfig> segment = ASVConfig.createSegment(c, cc, SOLUTION_STEP_SIZE);
 
             if (!isValidSegment(segment)) {
                 newPath.add(path.get(j - 1));
@@ -259,7 +268,7 @@ public class SearchAgent {
             ASVConfig c = newPath.get(j);
             ASVConfig cc = newPath.get(j + 1);
 
-            List<ASVConfig> segment = ASVConfig.createSegment(c, cc);
+            List<ASVConfig> segment = ASVConfig.createSegment(c, cc, SOLUTION_STEP_SIZE);
             finalPath.addAll(segment);
         }
         return finalPath;
@@ -280,14 +289,12 @@ public class SearchAgent {
         List<ASVConfig> vertices = new ArrayList<>();
 
         do {
-            vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), 100));
-            vertices.addAll(sampler.sampleNearObstacles(initialConfig, 100, 0.1));
+            vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), SAMPLE_SIZE));
             path = this.findPath(vertices, initialConfig, goalConfig);
         } while (path == null);
 
         problemSpec.setPath(getSolution(path));
         problemSpec.saveSolution("testing.txt");
-
         System.out.println("Solution Found!");
     }
 }

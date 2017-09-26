@@ -30,7 +30,7 @@ public class ASVConfig {
 			asvPositions.add(new Point2D.Double(coords[i * 2],
 					coords[i * 2 + 1]));
 		}
-		getAngles();
+		angles = getAngles();
 	}
 
 
@@ -46,6 +46,7 @@ public class ASVConfig {
 		}
 		asvPositions.set(0, anchor);
 		setAngles(angles);
+		this.angles = angles;
 	}
 
 	/**
@@ -64,7 +65,7 @@ public class ASVConfig {
 					.add(new Point2D.Double(s.nextDouble(), s.nextDouble()));
 		}
 		s.close();
-		getAngles();
+		angles = getAngles();
 	}
 
 	/**
@@ -75,6 +76,7 @@ public class ASVConfig {
 	 */
 	public ASVConfig(ASVConfig cfg) {
 		asvPositions = cfg.getASVPositions();
+		angles = getAngles();
 	}
 
 	/**
@@ -225,7 +227,7 @@ public class ASVConfig {
 	public void setAngles(double[] angles) {
 		double currentAngle = 0;
 		for (int i = 0; i < angles.length; i++) {
-			currentAngle += angles[i];
+			currentAngle = i == 0 ? angles[i] : angles[i-1] + angles[i];
 			Point2D a = this.getPosition(i);
 			Point2D b = this.getPosition(i + 1);
 			double newX = 0.05 * Math.cos(currentAngle) + a.getX();
@@ -297,14 +299,14 @@ public class ASVConfig {
 	 * @param goalConfig
 	 * @return Segment between two configurations.
 	 */
-	public static List<ASVConfig> createSegment(ASVConfig initialCfg, ASVConfig goalConfig) {
+	public static List<ASVConfig> createSegment(ASVConfig initialCfg, ASVConfig goalConfig, double stepSize) {
 		List<ASVConfig> segment = new ArrayList<>();
 
 		/* Setup rate of change for X and Y */
 		double[] a = initialCfg.getAngles();
 		double[] b = goalConfig.getAngles();
 		double distance = initialCfg.maxDistance(goalConfig);
-		int iterations = (int) Math.ceil(distance / 0.001);
+		int iterations = (int) Math.ceil(distance / stepSize);
 
 		Point2D p1 = initialCfg.getPosition(0);
 		Point2D p2 = goalConfig.getPosition(0);

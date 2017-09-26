@@ -25,6 +25,10 @@ public class Node implements Comparable<Node> {
         this.config = config;
     }
 
+    public Node() {
+
+    }
+
     public int compareTo(Node o) {
         return Double.compare(this.pathCost, o.pathCost);
     }
