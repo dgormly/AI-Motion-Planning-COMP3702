@@ -345,4 +345,21 @@ public class ASVConfig {
 	}
 
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		ASVConfig asvConfig = (ASVConfig) o;
+
+		if (!asvPositions.equals(asvConfig.asvPositions)) return false;
+		return Arrays.equals(angles, asvConfig.angles);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = asvPositions.hashCode();
+		result = 31 * result + Arrays.hashCode(angles);
+		return result;
+	}
 }

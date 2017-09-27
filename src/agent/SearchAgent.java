@@ -5,7 +5,6 @@ import problem.Obstacle;
 import problem.ProblemSpec;
 import tester.Tester;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
@@ -16,11 +15,13 @@ public class SearchAgent {
 
     private final double SAMPLE_STEP_SIZE = 0.001;
     private final double SOLUTION_STEP_SIZE = 0.001;
-    private final double SEARCH_RANGE = 0.2;
+    private final double SEARCH_RANGE = 0.1;
     private final int SAMPLE_SIZE = 5;
 
     private ProblemSpec problemSpec;
     private List<Obstacle> obstacles;
+    public List<ASVConfig[]> forbiddenEdges = new ArrayList<>();
+    private List<ASVConfig[]> significantEdge = new ArrayList<>();
 
     public List<Point2D> sampleList;
     public Tester tester = new Tester();
@@ -145,6 +146,7 @@ public class SearchAgent {
     /**
      * Finds a path from a list of vertice using A* search
      * Heuristic distance to the final config.
+     * Does not check for clashes.
      *
      * @param vertices
      *      to search through.
@@ -154,7 +156,7 @@ public class SearchAgent {
      *      the end configuration.
      * @return List of Nodes containing the path.
      */
-    public List<Node> findPath(List<ASVConfig> vertices, ASVConfig start, ASVConfig goal) {
+    public List<Node> aStarSearch(List<ASVConfig> vertices, ASVConfig start, ASVConfig goal) {
 
         // Sample around starting areas.
         vertices.add(start);
@@ -171,7 +173,7 @@ public class SearchAgent {
         PriorityQueue<Node> container = new PriorityQueue<>();
         container.add(child);
 
-        Node current = new Node();
+        Node current;
         List<Node> path = new ArrayList<>();
         // Begin A* Star search.
         while (true) {
@@ -182,13 +184,15 @@ public class SearchAgent {
             if (historySet.contains(current.config)) {
                 continue;
             }
+
             historySet.add(current.config);
             List<ASVConfig> children = getASVsInRange(SEARCH_RANGE, current.config, vertices);
 
             for (ASVConfig c : children) {
-
-                List<ASVConfig> segment = ASVConfig.createSegment(current.config, c, SOLUTION_STEP_SIZE);
-                if (!isValidSegment(segment)) {
+                // Don't navigate clashing edge.
+                ASVConfig[] e = {current.config, c};
+                if (forbiddenEdges.contains(e)) {
+                    System.err.println("Skipping forbidden edge.");
                     continue;
                 }
 
@@ -212,6 +216,34 @@ public class SearchAgent {
     }
 
 
+    public void expansionPhase(List<ASVConfig> vertices, ASVConfig initialCfg, ASVConfig goalCfg) {
+        for (int i = 0; i < forbiddenEdges.size(); i++) {
+            ASVConfig[] e = forbiddenEdges.get(i);
+            forbiddenEdges.remove(e);
+            List<Node> path = aStarSearch(vertices, initialCfg, goalCfg);
+            forbiddenEdges.add(e);
+            // Significant edge found!
+            if (path != null) {
+                System.err.println("Significant edge found.");
+                significantEdge.add(e);
+            }
+        }
+
+        for (ASVConfig[] significantEdge : significantEdge) {
+            Point2D p1 = significantEdge[0].getPosition(0);
+            Point2D p2 = significantEdge[1].getPosition(0);
+
+            double w = p2.getX() - p1.getX();
+            double h = p2.getY() - p1.getY();
+
+            Rectangle2D r = new Rectangle2D.Double(p1.getX(), p1.getY(), w, h);
+            vertices.addAll(new Sampler(problemSpec.getObstacles(), r).sampleUniformly(7, 2));
+        }
+        significantEdge.clear();
+
+        vertices.addAll(new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0,0,1,1)).sampleUniformly(initialCfg.getASVCount(), 2));
+    }
+
     /**
      * Checks if a segment is valid between two configurations.
      *
@@ -232,22 +264,26 @@ public class SearchAgent {
     }
 
 
-    /**
-     * Returns the soultion path.
-     *
-     * @param nodes
-     *      List of nodes to be converted into ASVConfigs.
-     *
-     * @return ASV Configuration path.
-     */
-    public List<ASVConfig> getSolution(List<Node> nodes) {
-
+    public List<ASVConfig> convertNodes(List<Node> nodes) {
         List<ASVConfig> path = new ArrayList<>();
-        List<ASVConfig> finalPath = new ArrayList<>();
 
         for (int i = nodes.size() - 1; i >= 0; i--) {
             path.add(nodes.get(i).config);
         }
+        return path;
+    }
+
+
+    /**
+     * Returns the soultion path.
+     *
+     * @param path
+     *      List of ASVConfigs to be converted into a path.
+     *
+     * @return ASV Configuration path.
+     */
+    public List<ASVConfig> getSolution(List<ASVConfig> path) {
+        List<ASVConfig> finalPath = new ArrayList<>();
 
         // Create segments
         List<ASVConfig> newPath = new ArrayList<>();
@@ -259,6 +295,8 @@ public class SearchAgent {
 
             if (!isValidSegment(segment)) {
                 newPath.add(path.get(j - 1));
+            } else {
+                return null;
             }
         }
         newPath.add(path.get(path.size() - 1));
@@ -274,6 +312,20 @@ public class SearchAgent {
     }
 
 
+    public ASVConfig[] checkForClash(List<ASVConfig> path) {
+        for (int i = 0; i < path.size() - 1; i++) {
+            ASVConfig cfg1 = path.get(i);
+            ASVConfig cfg2 = path.get(i + 1);
+            List<ASVConfig> segment = ASVConfig.createSegment(cfg1, cfg2, SOLUTION_STEP_SIZE);
+            if (isValidSegment(segment)) {
+                ASVConfig[] e = {cfg1, cfg2};
+                return e;
+            }
+        }
+        return null;
+    }
+
+
     /**
      * Controls the AI search.
      *
@@ -285,17 +337,31 @@ public class SearchAgent {
         ASVConfig goalConfig = problemSpec.getGoalState();
 
         List<Node> path;
+        List<ASVConfig> asvPath;
         List<ASVConfig> vertices = new ArrayList<>();
 
-        //vertices.addAll(sampler.sampleGrid(50, 50, initialConfig));
-        do {
-            vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), SAMPLE_SIZE));
-            //vertices.addAll(sampler.sampleNearObstacles(initialConfig, SAMPLE_SIZE/ 2, 0.3));
-            path = this.findPath(vertices, initialConfig, goalConfig);
-        } while (path == null);
+        vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), SAMPLE_SIZE));
+        while (true) {
+            path = aStarSearch(vertices, initialConfig, goalConfig);
+            if (path != null) {
+                System.err.println("Potential Path found");
+                asvPath = convertNodes(path);
+                ASVConfig[] clash = checkForClash(asvPath);
+                if (clash == null) {
+                    System.out.println("Solution found!");
+                    System.exit(0);
+                } else {
+                    System.err.println("Clash found");
+                    forbiddenEdges.add(clash);
+                }
+            } else {
+                System.err.println("No Path found");
+                expansionPhase(vertices, initialConfig, goalConfig);
+            }
 
-        problemSpec.setPath(getSolution(path));
-        problemSpec.saveSolution("testing.txt");
-        System.out.println("Solution Found!");
+            //problemSpec.setPath(getSolution(path));
+            //problemSpec.saveSolution("testing.txt");
+            //System.out.println("Solution Found!");
+        }
     }
 }

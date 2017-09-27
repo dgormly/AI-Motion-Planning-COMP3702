@@ -1,5 +1,6 @@
 package visdebug;
 
+import agent.Edge;
 import agent.Node;
 import agent.Sampler;
 import agent.SearchAgent;
@@ -7,6 +8,7 @@ import problem.ASVConfig;
 import problem.Obstacle;
 import problem.ProblemSpec;
 
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,7 +24,7 @@ public class VisualHelperTester {
 		ProblemSpec problemSpec = new ProblemSpec();
 		problemSpec.assumeDirectSolution();
 		try {
-			problemSpec.loadProblem("testcases/7-ASV-x6.txt");
+			problemSpec.loadProblem("testcases/7ASV-easy.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -37,17 +39,35 @@ public class VisualHelperTester {
 		vh.addRectangles(rectangles);
 
 		List<Node> path;
+		List<ASVConfig> asvPath;
 		List<ASVConfig> vertices = new ArrayList<>();
+		Sampler sampler = new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0, 0, 1, 1));
+		vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), 5));
+		while (true) {
+			path = agent.aStarSearch(vertices, initialConfig, goalConfig);
+			if (path != null) {
+				asvPath = agent.convertNodes(path);
 
-		do {
-			List<ASVConfig> ran = new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0,0,1,1)).sampleUniformly(7, 5);
-			//ran.addAll(new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0,0,1,1)).sampleInsidePassage(initialConfig, 20, 0.5));
-			for (ASVConfig asvConfig : ran) {
-				vh.addLinkedPoints(asvConfig.getASVPositions());
+				// Print
+				List<Point2D> pPath = new ArrayList<>();
+				for (ASVConfig asvConfig : asvPath) {
+					vh.addLinkedPoints(asvConfig.getASVPositions());
+					pPath.add(asvConfig.getPosition(0));
+					vh.addLinkedPoints(pPath);
+				}
+				ASVConfig[] clash = agent.checkForClash(asvPath);
+				if (clash == null) {
+					System.out.println("Solution found!");
+					System.exit(0);
+				} else {
+					agent.forbiddenEdges.add(clash);
+				}
+			} else {
+				agent.expansionPhase(vertices, initialConfig, goalConfig);
 			}
-			vh.repaint();
-			vh.waitKey();
 
-		} while (true);
+
+
+		}
 	}
 }
