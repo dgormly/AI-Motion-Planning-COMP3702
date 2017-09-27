@@ -61,18 +61,15 @@ public class Sampler {
         for (int i = 0; i < sampleSize; i++) {
             Point2D point;
 
-            do {
-                double xPoint = Math.abs(Math.random() * sampleArea.getWidth() + sampleArea.getX());
-                double yPoint = Math.abs(Math.random() * sampleArea.getHeight() + sampleArea.getY());
-                point = new Point2D.Double(xPoint, yPoint);
-                if (!checkValidPoint(point)) {
-                    invalidPoints.add(point);
-                }
-            } while (!checkValidPoint(point));
-
-            List<ASVConfig> configs = ASVConfig.sampleConfigurations(point, numASVs, 1, obstacles);
-            sampleList.addAll(configs);
-
+            double xPoint = Math.abs(Math.random() * sampleArea.getWidth() + sampleArea.getX());
+            double yPoint = Math.abs(Math.random() * sampleArea.getHeight() + sampleArea.getY());
+            point = new Point2D.Double(xPoint, yPoint);
+            if (!checkValidPoint(point)) {
+                invalidPoints.add(point);
+            } else {
+                List<ASVConfig> configs = ASVConfig.sampleConfigurations(point, numASVs, 1, obstacles);
+                sampleList.addAll(configs);
+            }
             // Sample in passages using bad points.
             for (Point2D invalidPoint : invalidPoints) {
                 for (Point2D point2D : invalidPoints) {

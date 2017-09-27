@@ -24,7 +24,7 @@ public class VisualHelperTester {
 		ProblemSpec problemSpec = new ProblemSpec();
 		problemSpec.assumeDirectSolution();
 		try {
-			problemSpec.loadProblem("testcases/7ASV-easy.txt");
+			problemSpec.loadProblem("testcases/3ASV-easy.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -43,6 +43,7 @@ public class VisualHelperTester {
 		List<ASVConfig> vertices = new ArrayList<>();
 		Sampler sampler = new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0, 0, 1, 1));
 		vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), 5));
+
 		while (true) {
 			path = agent.aStarSearch(vertices, initialConfig, goalConfig);
 			if (path != null) {
@@ -55,18 +56,17 @@ public class VisualHelperTester {
 					pPath.add(asvConfig.getPosition(0));
 					vh.addLinkedPoints(pPath);
 				}
-				ASVConfig[] clash = agent.checkForClash(asvPath);
+				Edge clash = agent.checkForClash(asvPath);
 				if (clash == null) {
 					System.out.println("Solution found!");
 					System.exit(0);
 				} else {
 					agent.forbiddenEdges.add(clash);
+					vertices.remove(clash);
 				}
 			} else {
 				agent.expansionPhase(vertices, initialConfig, goalConfig);
 			}
-
-
 
 		}
 	}

@@ -13,15 +13,15 @@ import java.util.List;
 
 public class SearchAgent {
 
-    private final double SAMPLE_STEP_SIZE = 0.001;
     private final double SOLUTION_STEP_SIZE = 0.001;
-    private final double SEARCH_RANGE = 0.1;
-    private final int SAMPLE_SIZE = 5;
+    private final double SEARCH_RANGE = 0.2;
+    private final int SAMPLE_SIZE = 200;
+    private final int CLASH_SAMPLES = 5;
 
     private ProblemSpec problemSpec;
     private List<Obstacle> obstacles;
-    public List<ASVConfig[]> forbiddenEdges = new ArrayList<>();
-    private List<ASVConfig[]> significantEdge = new ArrayList<>();
+    public List<Edge> forbiddenEdges = new ArrayList<>();
+    private List<Edge> significantEdge = new ArrayList<>();
 
     public List<Point2D> sampleList;
     public Tester tester = new Tester();
@@ -105,7 +105,7 @@ public class SearchAgent {
                 continue;
             }
 
-            if (isValidSegment(ASVConfig.createSegment(cfg, c, SAMPLE_STEP_SIZE))) {
+            if (isValidSegment(ASVConfig.createSegment(cfg, c, SOLUTION_STEP_SIZE))) {
                 double d = cfg.totalDistance(c);
                 if (d < dist) {
                     closestASV = c;
@@ -128,14 +128,12 @@ public class SearchAgent {
      */
     public List<ASVConfig> getASVsInRange(double distSize, ASVConfig cfg, List<ASVConfig> vertices) {
         List<ASVConfig> returnList = new ArrayList<>();
-        Point2D point = cfg.getPosition(0);
 
         for (ASVConfig c : vertices) {
-            Point2D pp = c.getPosition(0);
-            if (point.equals(pp)) {
+            if (cfg.equals(c)) {
                 continue;
             }
-            if (point.distance(pp) < distSize) {
+            if (cfg.totalDistance(c) < distSize) {
                 returnList.add(c);
 
             }
@@ -157,21 +155,15 @@ public class SearchAgent {
      * @return List of Nodes containing the path.
      */
     public List<Node> aStarSearch(List<ASVConfig> vertices, ASVConfig start, ASVConfig goal) {
-
-        // Sample around starting areas.
-        vertices.add(start);
-        vertices.add(goal);
-        ASVConfig closestStartPoint = start;
         ASVConfig closestGoalPoint = goal;
 
         /* Setup Search */
         // First node is start config, child is closest cfg.
         Node parent = new Node(null,  0, start);
-        Node child = new Node(parent, closestStartPoint.totalDistance(closestGoalPoint), closestStartPoint);
 
         Set<ASVConfig> historySet = new HashSet<>();
         PriorityQueue<Node> container = new PriorityQueue<>();
-        container.add(child);
+        container.add(parent);
 
         Node current;
         List<Node> path = new ArrayList<>();
@@ -189,10 +181,8 @@ public class SearchAgent {
             List<ASVConfig> children = getASVsInRange(SEARCH_RANGE, current.config, vertices);
 
             for (ASVConfig c : children) {
-                // Don't navigate clashing edge.
-                ASVConfig[] e = {current.config, c};
+                Edge e = new Edge(current.config, c);
                 if (forbiddenEdges.contains(e)) {
-                    System.err.println("Skipping forbidden edge.");
                     continue;
                 }
 
@@ -217,31 +207,32 @@ public class SearchAgent {
 
 
     public void expansionPhase(List<ASVConfig> vertices, ASVConfig initialCfg, ASVConfig goalCfg) {
+        //System.err.println("Expansion phase");
         for (int i = 0; i < forbiddenEdges.size(); i++) {
-            ASVConfig[] e = forbiddenEdges.get(i);
+            Edge e = forbiddenEdges.get(i);
             forbiddenEdges.remove(e);
             List<Node> path = aStarSearch(vertices, initialCfg, goalCfg);
-            forbiddenEdges.add(e);
             // Significant edge found!
             if (path != null) {
-                System.err.println("Significant edge found.");
+                System.err.println("Significant edge found");
                 significantEdge.add(e);
             }
+                forbiddenEdges.add(e);
         }
 
-        for (ASVConfig[] significantEdge : significantEdge) {
-            Point2D p1 = significantEdge[0].getPosition(0);
-            Point2D p2 = significantEdge[1].getPosition(0);
+        for (Edge significantEdge : significantEdge) {
+            Point2D p1 = significantEdge.cfg1.getPosition(0);
+            Point2D p2 = significantEdge.cfg2.getPosition(0);
 
             double w = p2.getX() - p1.getX();
             double h = p2.getY() - p1.getY();
 
-            Rectangle2D r = new Rectangle2D.Double(p1.getX(), p1.getY(), w, h);
-            vertices.addAll(new Sampler(problemSpec.getObstacles(), r).sampleUniformly(7, 2));
+            Rectangle2D r = new Rectangle2D.Double(p1.getX(), p1.getY(), w * 1.25, h * 1.25);
+            vertices.addAll(new Sampler(problemSpec.getObstacles(), r).sampleUniformly(initialCfg.getASVCount(), CLASH_SAMPLES));
         }
         significantEdge.clear();
 
-        vertices.addAll(new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0,0,1,1)).sampleUniformly(initialCfg.getASVCount(), 2));
+        vertices.addAll(new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0,0,1,1)).sampleUniformly(initialCfg.getASVCount(), 10));
     }
 
     /**
@@ -259,7 +250,6 @@ public class SearchAgent {
                 return false;
             }
         }
-
         return true;
     }
 
@@ -312,13 +302,13 @@ public class SearchAgent {
     }
 
 
-    public ASVConfig[] checkForClash(List<ASVConfig> path) {
+    public Edge checkForClash(List<ASVConfig> path) {
         for (int i = 0; i < path.size() - 1; i++) {
             ASVConfig cfg1 = path.get(i);
             ASVConfig cfg2 = path.get(i + 1);
             List<ASVConfig> segment = ASVConfig.createSegment(cfg1, cfg2, SOLUTION_STEP_SIZE);
-            if (isValidSegment(segment)) {
-                ASVConfig[] e = {cfg1, cfg2};
+            if (!isValidSegment(segment)) {
+                Edge e = new Edge(cfg1, cfg2);
                 return e;
             }
         }
@@ -340,28 +330,29 @@ public class SearchAgent {
         List<ASVConfig> asvPath;
         List<ASVConfig> vertices = new ArrayList<>();
 
+        vertices.add(initialConfig);
+        vertices.add(goalConfig);
+
         vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), SAMPLE_SIZE));
         while (true) {
             path = aStarSearch(vertices, initialConfig, goalConfig);
             if (path != null) {
-                System.err.println("Potential Path found");
+                //System.err.println("Potential Path found");
                 asvPath = convertNodes(path);
-                ASVConfig[] clash = checkForClash(asvPath);
+                Edge clash = checkForClash(asvPath);
                 if (clash == null) {
                     System.out.println("Solution found!");
-                    System.exit(0);
+                    problemSpec.setPath(getSolution(asvPath));
+                    problemSpec.saveSolution("testing.txt");
+                    break;
                 } else {
-                    System.err.println("Clash found");
+                    //System.err.println("Clash found");
                     forbiddenEdges.add(clash);
                 }
             } else {
-                System.err.println("No Path found");
+                //System.err.println("No Path found");
                 expansionPhase(vertices, initialConfig, goalConfig);
             }
-
-            //problemSpec.setPath(getSolution(path));
-            //problemSpec.saveSolution("testing.txt");
-            //System.out.println("Solution Found!");
         }
     }
 }
