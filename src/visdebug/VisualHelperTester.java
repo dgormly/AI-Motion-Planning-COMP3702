@@ -22,7 +22,7 @@ public class VisualHelperTester {
 		ProblemSpec problemSpec = new ProblemSpec();
 		problemSpec.assumeDirectSolution();
 		try {
-			problemSpec.loadProblem("testcases/7ASV-easy.txt");
+			problemSpec.loadProblem("testcases/7-ASV-x6.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -40,8 +40,7 @@ public class VisualHelperTester {
 		List<ASVConfig> vertices = new ArrayList<>();
 
 		do {
-			vh.clearLinkedPoints();
-			List<ASVConfig> ran = new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0,0,1,1)).sampleUniformly(7, 1);
+			List<ASVConfig> ran = new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0,0,1,1)).sampleUniformly(7, 5);
 			//ran.addAll(new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0,0,1,1)).sampleInsidePassage(initialConfig, 20, 0.5));
 			for (ASVConfig asvConfig : ran) {
 				vh.addLinkedPoints(asvConfig.getASVPositions());

@@ -17,7 +17,7 @@ public class SearchAgent {
     private final double SAMPLE_STEP_SIZE = 0.001;
     private final double SOLUTION_STEP_SIZE = 0.001;
     private final double SEARCH_RANGE = 0.2;
-    private final int SAMPLE_SIZE = 100;
+    private final int SAMPLE_SIZE = 5;
 
     private ProblemSpec problemSpec;
     private List<Obstacle> obstacles;
@@ -287,8 +287,10 @@ public class SearchAgent {
         List<Node> path;
         List<ASVConfig> vertices = new ArrayList<>();
 
+        //vertices.addAll(sampler.sampleGrid(50, 50, initialConfig));
         do {
             vertices.addAll(sampler.sampleUniformly(initialConfig.getASVCount(), SAMPLE_SIZE));
+            //vertices.addAll(sampler.sampleNearObstacles(initialConfig, SAMPLE_SIZE/ 2, 0.3));
             path = this.findPath(vertices, initialConfig, goalConfig);
         } while (path == null);
 
