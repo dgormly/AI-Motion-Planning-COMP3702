@@ -227,7 +227,7 @@ public class ASVConfig {
 	public void setAngles(double[] angles) {
 		double currentAngle = 0;
 		for (int i = 0; i < angles.length; i++) {
-			currentAngle = i == 0 ? angles[i] : angles[i-1] + angles[i];
+			currentAngle = i == 0 ? angles[i] : angles[i] + angles[i-1] ;
 			Point2D a = this.getPosition(i);
 			Point2D b = this.getPosition(i + 1);
 			double newX = 0.05 * Math.cos(currentAngle) + a.getX();
@@ -259,7 +259,7 @@ public class ASVConfig {
 				double initialAngleDegrees = i == 1 ? Math.random() * 360 : Math.random() * 180;
 				//range = i == 1 ? initialAngleDegrees : range - initialAngleDegrees;
 				initialAngleDegrees = normaliseAngle(Math.toRadians(initialAngleDegrees));
-				rAngles[i - 1] = initialAngleDegrees;
+				rAngles[i - 1] = i == 1 ? initialAngleDegrees : initialAngleDegrees - rAngles[i - 2];
 			}
 
 			// Check if angles are a valid combination.

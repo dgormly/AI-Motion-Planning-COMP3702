@@ -135,10 +135,7 @@ public class SearchAgent {
                 continue;
             }
             if (point.distance(pp) < distSize) {
-                List<ASVConfig> segment = ASVConfig.createSegment(cfg, c, SAMPLE_STEP_SIZE);
-                if (isValidSegment(segment)) {
-                    returnList.add(c);
-                }
+                returnList.add(c);
 
             }
         }
@@ -189,6 +186,12 @@ public class SearchAgent {
             List<ASVConfig> children = getASVsInRange(SEARCH_RANGE, current.config, vertices);
 
             for (ASVConfig c : children) {
+
+                List<ASVConfig> segment = ASVConfig.createSegment(current.config, c, SOLUTION_STEP_SIZE);
+                if (!isValidSegment(segment)) {
+                    continue;
+                }
+
                 if (c.equals(closestGoalPoint)) {
                     /* Found goal config. */
                     Node finalNode = new Node(current, c.totalDistance(current.config), goal);

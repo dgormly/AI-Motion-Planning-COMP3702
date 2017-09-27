@@ -41,7 +41,7 @@ public class VisualHelperTester {
 
 		do {
 			vh.clearLinkedPoints();
-			List<ASVConfig> ran = new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0,0,1,1)).sampleUniformly(7, 20);
+			List<ASVConfig> ran = new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0,0,1,1)).sampleUniformly(7, 1);
 			//ran.addAll(new Sampler(problemSpec.getObstacles(), new Rectangle2D.Double(0,0,1,1)).sampleInsidePassage(initialConfig, 20, 0.5));
 			for (ASVConfig asvConfig : ran) {
 				vh.addLinkedPoints(asvConfig.getASVPositions());
